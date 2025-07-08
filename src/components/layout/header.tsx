@@ -64,6 +64,9 @@ export default function Header() {
     
     if (pathname === '/dashboard/projects') pageTitle = 'All Projects';
     if (pathname === '/dashboard/tasks') pageTitle = 'All Tasks';
+    if (pathname === '/dashboard/profile') pageTitle = 'Profile';
+    if (pathname === '/dashboard/billing') pageTitle = 'Billing';
+    if (pathname === '/dashboard/settings') pageTitle = 'Settings';
 
     if (pathname === '/dashboard') {
         return <BreadcrumbItem><BreadcrumbPage>Dashboard</BreadcrumbPage></BreadcrumbItem>;
