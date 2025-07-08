@@ -31,6 +31,16 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { CreateProjectForm } from "@/components/projects/create-project-form";
+import { useToast } from "@/hooks/use-toast";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" } = {
     "On Track": "default",
@@ -42,25 +52,31 @@ const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive"
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreateProjectOpen, setCreateProjectOpen] = useState(false);
+  const { toast } = useToast();
+
+  const fetchProjects = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/projects');
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
+      }
+      const data = await response.json();
+      setProjects(data);
+    } catch (error) {
+      console.error("Failed to fetch projects", error);
+      toast({
+        title: "Error fetching projects",
+        description: "Could not retrieve project data. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch('/api/projects');
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
-        }
-        const data = await response.json();
-        setProjects(data);
-      } catch (error) {
-        console.error("Failed to fetch projects", error);
-        // In a real app, you might show a toast notification here
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchProjects();
   }, []);
 
@@ -71,10 +87,26 @@ export default function ProjectsPage() {
           <h1 className="text-3xl font-bold font-headline">All Projects</h1>
           <p className="text-muted-foreground">Manage all your team's projects here.</p>
         </div>
-        <Button>
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Create Project
-        </Button>
+        <Dialog open={isCreateProjectOpen} onOpenChange={setCreateProjectOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Create Project
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[480px]">
+            <DialogHeader>
+              <DialogTitle>Create a new project</DialogTitle>
+              <DialogDescription>
+                Give your new project a name and a color to get started.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateProjectForm
+              onSuccess={fetchProjects}
+              setOpen={setCreateProjectOpen}
+            />
+          </DialogContent>
+        </Dialog>
       </div>
       <Card>
         <CardHeader>
@@ -111,9 +143,12 @@ export default function ProjectsPage() {
                 projects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">
-                      <Link href={`/dashboard/projects/${project.id}/kanban`}>
-                          <div className="hover:underline">{project.name}</div>
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        <span className="h-3 w-3 rounded-full" style={{ backgroundColor: project.color }}></span>
+                        <Link href={`/dashboard/projects/${project.id}/kanban`} className="hover:underline">
+                          {project.name}
+                        </Link>
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Badge variant={project.status === 'Completed' ? "outline" : statusVariantMap[project.status] || "default"}>{project.status}</Badge>

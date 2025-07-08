@@ -7,7 +7,7 @@ export const users: User[] = [
   { id: "user-4", name: "Alan Turing", email: "alan@example.com", avatar: "https://i.pravatar.cc/150?u=alan" },
 ];
 
-export const projects: Project[] = [
+export let projects: Project[] = [
   {
     id: "proj-1",
     name: "QuantumLeap Engine",

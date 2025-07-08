@@ -41,9 +41,8 @@ export async function POST(request: Request) {
             color: color || '#6366f1',
         };
 
-        // This is where you would save to a database.
-        // For this mock, we're not actually persisting it across requests.
-        // projects.push(newProject);
+        // For this mock, we are persisting it to the in-memory array.
+        projects.unshift(newProject);
 
         return NextResponse.json(newProject, { status: 201 });
     } catch (error) {
