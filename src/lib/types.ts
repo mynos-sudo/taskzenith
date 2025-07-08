@@ -52,3 +52,9 @@ export type KanbanColumn = {
   title: string;
   tasks: Task[];
 };
+
+export type ProjectSummary = {
+  summary: string;
+  outlook: "Positive" | "Neutral" | "Concerning";
+  suggestedAction: string;
+};

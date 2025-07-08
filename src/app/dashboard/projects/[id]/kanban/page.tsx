@@ -1,26 +1,39 @@
 "use client";
 
-import { useEffect, useState, use, useCallback } from "react";
-import type { Project, Task } from "@/lib/types";
+import { useEffect, useState, useCallback } from "react";
+import type { Project, Task, ProjectSummary } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { users } from "@/lib/data";
-import { Filter, PlusCircle, Users, Loader2 } from "lucide-react";
+import { Filter, PlusCircle, Users, Loader2, Wand2, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react";
 import KanbanBoard from "@/components/kanban/kanban-board";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
 import { ManageMembersDialog } from "@/components/projects/manage-members-dialog";
+import { summarizeProject } from "@/ai/flows/summarize-project";
+import { useToast } from "@/hooks/use-toast";
 
-export default function KanbanPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id: projectId } = use(params);
+const outlookConfig = {
+    Positive: { icon: TrendingUp, color: 'text-green-500', bgColor: 'bg-green-500/10' },
+    Neutral: { icon: Lightbulb, color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
+    Concerning: { icon: AlertTriangle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
+};
+
+export default function KanbanPage({ params }: { params: { id: string } }) {
+  const { id: projectId } = params;
+  const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +41,11 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const [tasksVersion, setTasksVersion] = useState(0);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isManageMembersOpen, setManageMembersOpen] = useState(false);
+  
+  const [isSummaryDialogOpen, setSummaryDialogOpen] = useState(false);
+  const [summary, setSummary] = useState<ProjectSummary | null>(null);
+  const [isSummaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   const fetchProject = useCallback(async () => {
     setIsLoading(true);
@@ -61,6 +79,28 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
     setManageMembersOpen(false);
     fetchProject();
   };
+
+  const handleGenerateSummary = useCallback(async () => {
+    setSummaryDialogOpen(true);
+    setSummaryLoading(true);
+    setSummary(null);
+    setSummaryError(null);
+    try {
+      const result = await summarizeProject({ projectId });
+      setSummary(result);
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : "An unknown error occurred";
+      setSummaryError(errorMsg);
+      toast({
+        title: "AI Summary Failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, [projectId, toast]);
+
 
   useEffect(() => {
     if (projectId) {
@@ -128,6 +168,10 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleGenerateSummary}>
+              <Wand2 className="h-4 w-4 mr-2" />
+              AI Summary
+            </Button>
             <Button variant="outline">
               <Filter className="h-4 w-4 mr-2" />
               Filter
@@ -160,6 +204,43 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
           </DialogContent>
         </Dialog>
 
+        <Dialog open={isSummaryDialogOpen} onOpenChange={setSummaryDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>AI Project Summary</DialogTitle>
+              <DialogDescription>
+                An AI-generated summary of '{project.name}'. This is based on the project's current status and tasks.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+              {isSummaryLoading && (
+                <div className="flex items-center justify-center p-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {summaryError && <div className="text-destructive text-sm">{summaryError}</div>}
+              {summary && (
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Summary</h4>
+                    <p className="text-sm text-muted-foreground">{summary.summary}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Outlook</h4>
+                    <Badge variant="outline" className={`border-0 ${outlookConfig[summary.outlook].bgColor} ${outlookConfig[summary.outlook].color}`}>
+                        <outlookConfig[summary.outlook].icon className="h-4 w-4 mr-2" />
+                        {summary.outlook}
+                    </Badge>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold mb-2">Suggested Action</h4>
+                    <p className="text-sm text-muted-foreground">{summary.suggestedAction}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </DndProvider>
   );

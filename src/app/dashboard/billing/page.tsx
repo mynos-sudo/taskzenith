@@ -1,6 +1,9 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
 
 const invoices = [
     {
@@ -27,6 +30,8 @@ const invoices = [
 ]
 
 export default function BillingPage() {
+  const { toast } = useToast();
+
   return (
     <div className="flex flex-col gap-8">
        <div>
@@ -47,11 +52,15 @@ export default function BillingPage() {
                         <p className="text-2xl font-bold">$49<span className="text-sm font-normal text-muted-foreground">/month</span></p>
                         <p className="text-xs text-muted-foreground">Billed monthly. Your next payment is on July 1, 2024.</p>
                     </div>
-                    <Button>Upgrade Plan</Button>
+                    <Button onClick={() => toast({ title: "Feature not available", description: "Upgrading plans is not yet implemented." })}>
+                        Upgrade Plan
+                    </Button>
                 </div>
             </CardContent>
             <CardFooter className="border-t pt-6">
-                <Button variant="outline">Cancel Subscription</Button>
+                 <Button variant="outline" onClick={() => toast({ title: "Feature not available", description: "Cancelling subscriptions is not yet implemented." })}>
+                    Cancel Subscription
+                </Button>
             </CardFooter>
         </Card>
         <Card>
