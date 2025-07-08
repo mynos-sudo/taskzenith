@@ -5,6 +5,13 @@ export type User = {
   avatar: string;
 };
 
+export type Comment = {
+  id: string;
+  content: string;
+  createdAt: string;
+  author: User;
+};
+
 export type ProjectRole = "OWNER" | "MEMBER" | "VIEWER";
 
 export type ProjectMember = {
@@ -37,6 +44,7 @@ export type Task = {
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
+  comments: Comment[];
 };
 
 export type KanbanColumn = {

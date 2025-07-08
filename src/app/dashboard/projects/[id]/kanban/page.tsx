@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Project } from "@/lib/types";
+import type { Project, Task } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { users } from "@/lib/data";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TaskDetails } from "@/components/tasks/task-details";
 
 export default function KanbanPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
@@ -23,10 +24,14 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
   const [tasksVersion, setTasksVersion] = useState(0);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const handleTaskCreated = () => {
+  const handleBoardUpdate = () => {
     setTasksVersion(v => v + 1);
     setCreateTaskOpen(false);
+    if (selectedTask) {
+      setSelectedTask(null);
+    }
   };
 
   useEffect(() => {
@@ -120,7 +125,7 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
                 <CreateTaskForm
                   projectId={project.id}
                   allUsers={users}
-                  onSuccess={handleTaskCreated}
+                  onSuccess={handleBoardUpdate}
                 />
               </DialogContent>
             </Dialog>
@@ -128,8 +133,15 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
         </div>
 
         <div className="flex-1 overflow-x-auto">
-          <KanbanBoard projectId={project.id} refreshTrigger={tasksVersion} />
+          <KanbanBoard projectId={project.id} refreshTrigger={tasksVersion} onTaskSelect={setSelectedTask} />
         </div>
+        
+        <Dialog open={!!selectedTask} onOpenChange={(isOpen) => !isOpen && setSelectedTask(null)}>
+          <DialogContent className="sm:max-w-[725px] max-h-[90vh] flex flex-col">
+              {selectedTask && <TaskDetails task={selectedTask} onUpdate={handleBoardUpdate} />}
+          </DialogContent>
+        </Dialog>
+
       </div>
     </DndProvider>
   );

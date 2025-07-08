@@ -6,7 +6,15 @@ import type { Task, TaskStatus, KanbanColumn as KanbanColumnType } from "@/lib/t
 import { KanbanColumn } from "./kanban-column";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function KanbanBoard({ projectId, refreshTrigger }: { projectId: string, refreshTrigger: number }) {
+export default function KanbanBoard({ 
+  projectId, 
+  refreshTrigger,
+  onTaskSelect
+}: { 
+  projectId: string, 
+  refreshTrigger: number,
+  onTaskSelect: (task: Task) => void;
+}) {
   const [columns, setColumns] = useState<KanbanColumnType[]>(() => 
     kanbanColumns.map(col => ({ ...col, tasks: [] }))
   );
@@ -111,6 +119,7 @@ export default function KanbanBoard({ projectId, refreshTrigger }: { projectId: 
           key={column.id}
           column={column}
           moveTask={moveTask}
+          onCardClick={onTaskSelect}
         />
       ))}
     </div>

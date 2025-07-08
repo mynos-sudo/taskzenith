@@ -8,9 +8,10 @@ import { cn } from "@/lib/utils";
 interface KanbanColumnProps {
   column: KanbanColumnType;
   moveTask: (taskId: string, columnId: TaskStatus) => void;
+  onCardClick: (task: Task) => void;
 }
 
-export function KanbanColumn({ column, moveTask }: KanbanColumnProps) {
+export function KanbanColumn({ column, moveTask, onCardClick }: KanbanColumnProps) {
   const [{ isOver }, drop] = useDrop(() => ({
     accept: "card",
     drop: (item: Task) => moveTask(item.id, column.id),
@@ -35,7 +36,7 @@ export function KanbanColumn({ column, moveTask }: KanbanColumnProps) {
       </div>
       <div className="flex-1 overflow-y-auto p-1 space-y-2">
         {column.tasks.map((task) => (
-          <KanbanCard key={task.id} task={task} />
+          <KanbanCard key={task.id} task={task} onCardClick={onCardClick} />
         ))}
       </div>
     </div>
