@@ -73,14 +73,14 @@ export let projects: Project[] = [
 ];
 
 export let tasks: Task[] = [
-  { id: "task-1", title: "Implement authentication module", description: "Set up Passport.js with JWT strategy.", status: "done", priority: "high", assignees: [users[0]], projectId: "proj-1" },
-  { id: "task-2", title: "Design database schema", description: "Define models for users, projects, and tasks.", status: "in-progress", priority: "high", assignees: [users[1]], projectId: "proj-1" },
-  { id: "task-3", title: "Develop API for user profiles", description: "Create endpoints for getting and updating user data.", status: "in-progress", priority: "medium", assignees: [users[1]], projectId: "proj-1" },
-  { id: "task-4", title: "Create UI mockups for dashboard", description: "Use Figma to design the main dashboard view.", status: "todo", priority: "medium", assignees: [], projectId: "proj-1" },
-  { id: "task-5", title: "Set up CI/CD pipeline", description: "Configure GitHub Actions for automated testing and deployment.", status: "todo", priority: "critical", assignees: [], projectId: "proj-1" },
-  { id: "task-6", title: "Initial research on scaling solutions", description: "Investigate Kubernetes and serverless options.", status: "done", priority: "low", assignees: [users[2]], projectId: "proj-2" },
-  { id: "task-7", title: "User testing for new feature", description: "Gather feedback from a focus group on the new Kanban view.", status: "backlog", priority: "medium", assignees: [], projectId: "proj-1" },
-  { id: "task-8", title: "Fix bug in reporting service", description: "The quarterly report is showing incorrect revenue numbers.", status: "in-progress", priority: "high", assignees: [users[3]], projectId: "proj-2" },
+  { id: "task-1", title: "Implement authentication module", description: "Set up Passport.js with JWT strategy.", status: "done", priority: "high", assignees: [users[0]], projectId: "proj-1", createdAt: "2024-05-01T10:00:00Z", updatedAt: "2024-05-02T14:30:00Z", dueDate: "2024-05-10T23:59:59Z" },
+  { id: "task-2", title: "Design database schema", description: "Define models for users, projects, and tasks.", status: "in-progress", priority: "high", assignees: [users[1]], projectId: "proj-1", createdAt: "2024-05-03T11:00:00Z", updatedAt: "2024-05-04T16:00:00Z", dueDate: "2024-05-15T23:59:59Z" },
+  { id: "task-3", title: "Develop API for user profiles", description: "Create endpoints for getting and updating user data.", status: "in-progress", priority: "medium", assignees: [users[1]], projectId: "proj-1", createdAt: "2024-05-05T09:00:00Z", updatedAt: "2024-05-06T11:20:00Z" },
+  { id: "task-4", title: "Create UI mockups for dashboard", description: "Use Figma to design the main dashboard view.", status: "todo", priority: "medium", assignees: [], projectId: "proj-1", createdAt: "2024-05-07T13:00:00Z", updatedAt: "2024-05-07T13:00:00Z", dueDate: "2024-05-20T23:59:59Z" },
+  { id: "task-5", title: "Set up CI/CD pipeline", description: "Configure GitHub Actions for automated testing and deployment.", status: "todo", priority: "critical", assignees: [], projectId: "proj-1", createdAt: "2024-05-08T15:00:00Z", updatedAt: "2024-05-08T15:00:00Z" },
+  { id: "task-6", title: "Initial research on scaling solutions", description: "Investigate Kubernetes and serverless options.", status: "done", priority: "low", assignees: [users[2]], projectId: "proj-2", createdAt: "2024-04-20T10:00:00Z", updatedAt: "2024-04-25T12:00:00Z" },
+  { id: "task-7", title: "User testing for new feature", description: "Gather feedback from a focus group on the new Kanban view.", status: "backlog", priority: "medium", assignees: [], projectId: "proj-1", createdAt: "2024-05-09T18:00:00Z", updatedAt: "2024-05-09T18:00:00Z" },
+  { id: "task-8", title: "Fix bug in reporting service", description: "The quarterly report is showing incorrect revenue numbers.", status: "in-progress", priority: "high", assignees: [users[3]], projectId: "proj-2", createdAt: "2024-05-10T10:00:00Z", updatedAt: "2024-05-11T09:45:00Z", dueDate: "2024-05-12T23:59:59Z" },
 ];
 
 export const kanbanColumns: Omit<KanbanColumn, 'tasks'>[] = [

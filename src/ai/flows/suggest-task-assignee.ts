@@ -1,4 +1,4 @@
-// use server'
+'use server';
 
 /**
  * @fileOverview An AI agent that suggests task assignees based on task content.

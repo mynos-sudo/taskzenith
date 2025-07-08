@@ -22,7 +22,7 @@ export async function POST(
 ) {
   try {
     const body = await request.json();
-    const { title, description, priority, assignees: assigneeIds = [] } = body;
+    const { title, description, priority, dueDate, assignees: assigneeIds = [] } = body;
     const projectId = params.id;
 
     if (!title || !priority) {
@@ -30,6 +30,7 @@ export async function POST(
     }
 
     const assignedUsers = users.filter(user => assigneeIds.includes(user.id));
+    const now = new Date().toISOString();
 
     const newTask: Task = {
       id: `task-${Date.now()}`,
@@ -39,6 +40,9 @@ export async function POST(
       priority,
       assignees: assignedUsers,
       projectId,
+      dueDate,
+      createdAt: now,
+      updatedAt: now,
     };
 
     tasks.unshift(newTask);

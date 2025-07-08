@@ -34,6 +34,9 @@ export type Task = {
   priority: Priority;
   assignees: User[];
   projectId: string;
+  dueDate?: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export type KanbanColumn = {

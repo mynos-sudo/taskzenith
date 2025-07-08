@@ -1,6 +1,8 @@
 "use client";
 
 import { useDrag } from "react-dnd";
+import { format } from "date-fns";
+import { CalendarDays } from "lucide-react";
 import type { Priority, Task } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge, type BadgeProps } from "@/components/ui/badge";
@@ -43,9 +45,15 @@ export function KanbanCard({ task }: KanbanCardProps) {
             <CardHeader className="p-4 pb-2">
               <CardTitle className="text-base">{task.title}</CardTitle>
             </CardHeader>
-            <CardContent className="p-4 pt-2">
+            <CardContent className="p-4 pt-2 space-y-3">
+               {task.dueDate && (
+                <div className="flex items-center text-xs text-muted-foreground">
+                    <CalendarDays className="h-4 w-4 mr-1.5" />
+                    <span>Due on {format(new Date(task.dueDate), "MMM d, yyyy")}</span>
+                </div>
+              )}
               <div className="flex items-center justify-between">
-                  <Badge variant={priorityVariantMap[task.priority] || "default"}>{task.priority}</Badge>
+                  <Badge variant={priorityVariantMap[task.priority] || "default"} className="capitalize">{task.priority}</Badge>
                   <div className="flex -space-x-2 overflow-hidden">
                       {task.assignees.map((assignee) => (
                           <Avatar key={assignee.id} className="inline-block h-6 w-6 rounded-full ring-2 ring-background">
