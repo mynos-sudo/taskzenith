@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@/lib/types";
+import type { User, Task } from "@/lib/types";
 import { AssigneeSelector } from "./assignee-selector";
 import { DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Textarea } from "../ui/textarea";
@@ -49,11 +50,13 @@ type CreateTaskFormProps = {
   projectId: string;
   allUsers: User[];
   onSuccess: () => void;
+  task?: Task | null;
 };
 
-export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFormProps) {
+export function CreateTaskForm({ projectId, allUsers, onSuccess, task }: CreateTaskFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const isEditMode = !!task;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -66,33 +69,55 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
     },
   });
 
+  useEffect(() => {
+    if (isEditMode && task) {
+      form.reset({
+        title: task.title,
+        description: task.description || "",
+        priority: task.priority,
+        assignees: task.assignees.map(a => a.id),
+        dueDate: task.dueDate ? new Date(task.dueDate) : undefined,
+      });
+    } else {
+       form.reset({
+        title: "",
+        description: "",
+        priority: "medium",
+        assignees: [],
+        dueDate: undefined,
+      });
+    }
+  }, [task, isEditMode, form]);
+
   const taskDescription = form.watch("description");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/projects/${projectId}/tasks`, {
-        method: "POST",
+      const url = isEditMode ? `/api/tasks/${task.id}` : `/api/projects/${projectId}/tasks`;
+      const method = isEditMode ? "PUT" : "POST";
+      
+      const response = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(values),
       });
 
       if (!response.ok) {
-        throw new Error("Failed to create task");
+        throw new Error(`Failed to ${isEditMode ? 'update' : 'create'} task`);
       }
       
       toast({
           title: "Success!",
-          description: `Task "${values.title}" has been created.`,
+          description: `Task "${values.title}" has been ${isEditMode ? 'updated' : 'created'}.`,
       });
 
       onSuccess();
-      form.reset();
 
     } catch (error) {
       toast({
         title: "Error",
-        description: "Could not create task. Please try again.",
+        description: `Could not ${isEditMode ? 'update' : 'create'} task. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -103,9 +128,12 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
   return (
     <>
       <DialogHeader>
-        <DialogTitle>Create New Task</DialogTitle>
+        <DialogTitle>{isEditMode ? 'Edit Task' : 'Create New Task'}</DialogTitle>
         <DialogDescription>
-          Fill in the details for the new task. Use the AI Suggester to find the right person for the job.
+          {isEditMode 
+            ? 'Update the details for this task.'
+            : 'Fill in the details for the new task. Use the AI Suggester to find the right person for the job.'
+          }
         </DialogDescription>
       </DialogHeader>
       <Form {...form}>
@@ -131,7 +159,7 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Priority</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a priority" />
@@ -231,7 +259,7 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
 
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Create Task
+            {isEditMode ? 'Save Changes' : 'Create Task'}
           </Button>
         </form>
       </Form>

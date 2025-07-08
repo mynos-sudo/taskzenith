@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import type { Task, Project, Priority, TaskStatus } from "@/lib/types";
-import { projects } from "@/lib/data"; // for getting project name and color
+import { projects, users } from "@/lib/data"; // for getting project name and color
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +21,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Table,
@@ -34,6 +35,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { CreateTaskForm } from "@/components/tasks/create-task-form";
+import { TaskDetails } from "@/components/tasks/task-details";
+
 
 const priorityVariantMap: Record<Priority, BadgeProps["variant"]> = {
     low: "outline",
@@ -53,6 +71,9 @@ const statusVariantMap: Record<TaskStatus, BadgeProps["variant"]> = {
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [taskToView, setTaskToView] = useState<Task | null>(null);
   const { toast } = useToast();
 
   const fetchTasks = async () => {
@@ -79,6 +100,38 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks();
   }, []);
+  
+  const handleUpdate = () => {
+    fetchTasks();
+    if (taskToView) {
+      // Refresh task details if modal is open
+      const updatedTask = tasks.find(t => t.id === taskToView.id);
+      setTaskToView(updatedTask || null);
+    }
+  }
+
+  const handleDelete = async () => {
+    if (!taskToDelete) return;
+    try {
+      const response = await fetch(`/api/tasks/${taskToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error("Failed to delete task.");
+      toast({
+        title: "Success",
+        description: `Task "${taskToDelete.title}" has been deleted.`,
+      });
+      fetchTasks();
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: "Could not delete the task. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setTaskToDelete(null);
+    }
+  }
 
   const getProjectById = (projectId: string): Project | undefined => {
     return projects.find(p => p.id === projectId);
@@ -133,7 +186,9 @@ export default function TasksPage() {
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">
-                        {task.title}
+                        <button onClick={() => setTaskToView(task)} className="hover:underline text-left">
+                          {task.title}
+                        </button>
                       </TableCell>
                        <TableCell className="hidden md:table-cell">
                          {project && (
@@ -178,9 +233,10 @@ export default function TasksPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTaskToView(task)}>View Details</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setTaskToEdit(task)}>Edit</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onSelect={() => setTaskToDelete(task)} className="text-destructive">Delete</DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </TableCell>
@@ -192,6 +248,44 @@ export default function TasksPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <Dialog open={!!taskToEdit} onOpenChange={(isOpen) => !isOpen && setTaskToEdit(null)}>
+        <DialogContent className="sm:max-w-[625px]">
+          {taskToEdit && (
+            <CreateTaskForm 
+              task={taskToEdit} 
+              projectId={taskToEdit.projectId} 
+              allUsers={users}
+              onSuccess={() => {
+                setTaskToEdit(null);
+                fetchTasks();
+              }} 
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={!!taskToDelete} onOpenChange={(isOpen) => !isOpen && setTaskToDelete(null)}>
+          <AlertDialogContent>
+              <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete the task &quot;{taskToDelete?.title}&quot;.
+                  </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+              </AlertDialogFooter>
+          </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={!!taskToView} onOpenChange={(isOpen) => !isOpen && setTaskToView(null)}>
+        <DialogContent className="sm:max-w-[725px] max-h-[90vh] flex flex-col">
+          {taskToView && <TaskDetails task={taskToView} onUpdate={handleUpdate} />}
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
