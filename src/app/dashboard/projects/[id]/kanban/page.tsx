@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import type { Project } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { projects, users } from "@/lib/data";
-import { Filter, PlusCircle, Users } from "lucide-react";
+import { users } from "@/lib/data";
+import { Filter, PlusCircle, Users, Loader2 } from "lucide-react";
 import KanbanBoard from "@/components/kanban/kanban-board";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -18,12 +20,62 @@ import {
 import { AssigneeSuggester } from "@/components/tasks/assignee-suggester";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function KanbanPage({ params }: { params: { id: string } }) {
-  const project = projects.find((p) => p.id === params.id);
+  const [project, setProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProject = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`/api/projects/${params.id}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+             throw new Error("Project not found");
+          }
+          throw new Error("Failed to fetch project data");
+        }
+        const data = await response.json();
+        setProject(data);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "An unknown error occurred");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProject();
+  }, [params.id]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-theme(spacing.24))]">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <Skeleton className="h-9 w-64 mb-2" />
+            <Skeleton className="h-8 w-48" />
+          </div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-32" />
+          </div>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="p-4 text-center text-destructive bg-destructive/10 rounded-md">Error: {error}</div>;
+  }
 
   if (!project) {
-    return <div>Project not found</div>;
+    return <div>Project could not be loaded.</div>;
   }
 
   return (
