@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
 
 export default function KanbanPage({ params }: { params: { id: string } }) {
+  const { id: projectId } = params;
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch(`/api/projects/${params.id}`);
+        const response = await fetch(`/api/projects/${projectId}`);
         if (!response.ok) {
           if (response.status === 404) {
              throw new Error("Project not found");
@@ -55,7 +56,7 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
       }
     };
     fetchProject();
-  }, [params.id]);
+  }, [projectId]);
 
   if (isLoading) {
     return (
