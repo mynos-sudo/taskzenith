@@ -140,7 +140,7 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess, task }: CreateT
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col flex-grow overflow-hidden"
+          className="flex flex-col flex-grow overflow-hidden min-h-0"
         >
           <ScrollArea className="flex-grow">
             <div className="space-y-4 pt-4 pr-6">
