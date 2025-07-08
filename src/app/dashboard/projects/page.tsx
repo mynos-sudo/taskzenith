@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import type { Project } from "@/lib/types";
@@ -50,6 +50,7 @@ import {
 
 import { CreateProjectForm } from "@/components/projects/create-project-form";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchStore } from "@/hooks/use-search-store";
 
 const statusVariantMap: { [key: string]: "default" | "secondary" | "destructive" } = {
     "On Track": "default",
@@ -65,6 +66,7 @@ export default function ProjectsPage() {
   const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const { toast } = useToast();
+  const { query } = useSearchStore();
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -90,6 +92,14 @@ export default function ProjectsPage() {
   useEffect(() => {
     fetchProjects();
   }, []);
+
+  const filteredProjects = useMemo(() => {
+    if (!query) return projects;
+    return projects.filter(p =>
+      p.name.toLowerCase().includes(query.toLowerCase()) ||
+      p.description?.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [projects, query]);
   
   const handleSuccess = () => {
     fetchProjects();
@@ -173,8 +183,8 @@ export default function ProjectsPage() {
                     <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                   </TableRow>
                 ))
-              ) : (
-                projects.map((project) => (
+              ) : filteredProjects.length > 0 ? (
+                filteredProjects.map((project) => (
                   <TableRow key={project.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-3">
@@ -226,6 +236,12 @@ export default function ProjectsPage() {
                     </TableCell>
                   </TableRow>
                 ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center h-24">
+                    No projects found.
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>

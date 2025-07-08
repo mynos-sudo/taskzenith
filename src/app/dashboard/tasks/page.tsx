@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import type { Task, Project, Priority, TaskStatus } from "@/lib/types";
@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { TaskDetails } from "@/components/tasks/task-details";
+import { useSearchStore } from "@/hooks/use-search-store";
 
 
 const priorityVariantMap: Record<Priority, BadgeProps["variant"]> = {
@@ -75,6 +76,7 @@ export default function TasksPage() {
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
   const [taskToView, setTaskToView] = useState<Task | null>(null);
   const { toast } = useToast();
+  const { query } = useSearchStore();
 
   const fetchTasks = async () => {
     setIsLoading(true);
@@ -100,6 +102,14 @@ export default function TasksPage() {
   useEffect(() => {
     fetchTasks();
   }, []);
+
+  const filteredTasks = useMemo(() => {
+    if (!query) return tasks;
+    return tasks.filter(t =>
+        t.title.toLowerCase().includes(query.toLowerCase()) ||
+        t.description?.toLowerCase().includes(query.toLowerCase())
+    );
+  }, [tasks, query]);
   
   const handleUpdate = () => {
     fetchTasks();
@@ -180,8 +190,8 @@ export default function TasksPage() {
                     <TableCell><Skeleton className="h-8 w-8" /></TableCell>
                   </TableRow>
                 ))
-              ) : (
-                tasks.map((task) => {
+              ) : filteredTasks.length > 0 ? (
+                filteredTasks.map((task) => {
                   const project = getProjectById(task.projectId);
                   return (
                     <TableRow key={task.id}>
@@ -243,6 +253,12 @@ export default function TasksPage() {
                     </TableRow>
                   )
                 })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center h-24">
+                    No tasks found.
+                  </TableCell>
+                </TableRow>
               )}
             </TableBody>
           </Table>

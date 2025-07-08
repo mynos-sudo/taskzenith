@@ -25,9 +25,11 @@ import { Input } from "@/components/ui/input";
 import { UserNav } from "./user-nav";
 import { ThemeToggle } from "../theme-toggle";
 import { cn } from "@/lib/utils";
+import { useSearchStore } from "@/hooks/use-search-store";
 
 export default function Header() {
   const pathname = usePathname();
+  const { query, setQuery } = useSearchStore();
 
   const navItems = [
     { href: "/dashboard", icon: Home, label: "Dashboard" },
@@ -133,6 +135,8 @@ export default function Header() {
           type="search"
           placeholder="Search..."
           className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
         />
       </div>
       <ThemeToggle />
