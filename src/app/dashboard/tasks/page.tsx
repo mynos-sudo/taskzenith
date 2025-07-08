@@ -7,6 +7,7 @@ import { MoreHorizontal } from "lucide-react";
 import type { Task, Project, Priority, TaskStatus } from "@/lib/types";
 import { projects } from "@/lib/data"; // for getting project name and color
 import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
