@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, use } from "react";
 import type { Project, Task, ProjectSummary } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -32,8 +31,8 @@ const outlookConfig = {
     Concerning: { icon: AlertTriangle, color: 'text-red-500', bgColor: 'bg-red-500/10' },
 };
 
-export default function KanbanPage({ params }: { params: { id: string } }) {
-  const { id: projectId } = params;
+export default function KanbanPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: projectId } = use(params);
   const { toast } = useToast();
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
