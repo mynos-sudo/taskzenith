@@ -91,10 +91,10 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="flex flex-col h-[calc(100vh-theme(spacing.24))]">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <div>
             <h1 className="text-3xl font-bold font-headline">{project.name}</h1>
-            <div className="flex items-center gap-2 mt-2">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <div className="flex -space-x-2 overflow-hidden">
                 {project.members.map((member) => (
                   <Avatar
