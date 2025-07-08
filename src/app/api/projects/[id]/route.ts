@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { projects } from '@/lib/data';
+import { projects, tasks } from '@/lib/data';
+import type { Project } from '@/lib/types';
 
 export async function GET(
   request: Request,
@@ -17,5 +18,66 @@ export async function GET(
   } catch (error) {
     console.error(`Failed to fetch project ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while fetching the project' }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const projectId = params.id;
+    const body = await request.json();
+    const { name, description, color } = body;
+
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+    if (projectIndex === -1) {
+      return NextResponse.json({ message: 'Project not found' }, { status: 404 });
+    }
+
+    if (!name) {
+      return NextResponse.json({ message: 'Project name is required' }, { status: 400 });
+    }
+
+    const updatedProject: Project = {
+      ...projects[projectIndex],
+      name,
+      description: description || '',
+      color: color || '#6366f1',
+    };
+
+    projects[projectIndex] = updatedProject;
+
+    return NextResponse.json(updatedProject);
+  } catch (error) {
+    console.error(`Failed to update project ${params.id}:`, error);
+    return NextResponse.json({ message: 'An error occurred while updating the project' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const projectId = params.id;
+    const projectIndex = projects.findIndex(p => p.id === projectId);
+
+    if (projectIndex === -1) {
+      return NextResponse.json({ message: 'Project not found' }, { status: 404 });
+    }
+
+    projects.splice(projectIndex, 1);
+    
+    // Also delete associated tasks
+    const remainingTasks = tasks.filter(task => task.projectId !== projectId);
+    tasks.length = 0;
+    Array.prototype.push.apply(tasks, remainingTasks);
+
+
+    return NextResponse.json({ message: 'Project deleted successfully' }, { status: 200 });
+  } catch (error) {
+    console.error(`Failed to delete project ${params.id}:`, error);
+    return NextResponse.json({ message: 'An error occurred while deleting the project' }, { status: 500 });
   }
 }

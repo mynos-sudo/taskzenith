@@ -18,6 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -34,11 +35,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
 import { CreateProjectForm } from "@/components/projects/create-project-form";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +62,8 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreateProjectOpen, setCreateProjectOpen] = useState(false);
+  const [projectToEdit, setProjectToEdit] = useState<Project | null>(null);
+  const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const { toast } = useToast();
 
   const fetchProjects = async () => {
@@ -79,6 +90,33 @@ export default function ProjectsPage() {
   useEffect(() => {
     fetchProjects();
   }, []);
+  
+  const handleSuccess = () => {
+    fetchProjects();
+  }
+  
+  const handleDelete = async () => {
+    if (!projectToDelete) return;
+    try {
+      const response = await fetch(`/api/projects/${projectToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error("Failed to delete project.");
+      toast({
+        title: "Success",
+        description: `Project "${projectToDelete.name}" has been deleted.`,
+      });
+      fetchProjects();
+    } catch (error) {
+       toast({
+        title: "Error",
+        description: "Could not delete the project. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setProjectToDelete(null);
+    }
+  }
 
   return (
     <div>
@@ -95,15 +133,11 @@ export default function ProjectsPage() {
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[480px]">
-            <DialogHeader>
-              <DialogTitle>Create a new project</DialogTitle>
-              <DialogDescription>
-                Give your new project a name and a color to get started.
-              </DialogDescription>
-            </DialogHeader>
             <CreateProjectForm
-              onSuccess={fetchProjects}
-              setOpen={setCreateProjectOpen}
+              onSuccess={() => {
+                handleSuccess();
+                setCreateProjectOpen(false);
+              }}
             />
           </DialogContent>
         </Dialog>
@@ -183,9 +217,10 @@ export default function ProjectsPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => setProjectToEdit(project)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem>Archive</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onSelect={() => setProjectToDelete(project)} className="text-destructive">Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -196,6 +231,34 @@ export default function ProjectsPage() {
           </Table>
         </CardContent>
       </Card>
+      
+      <Dialog open={!!projectToEdit} onOpenChange={(isOpen) => !isOpen && setProjectToEdit(null)}>
+        <DialogContent className="sm:max-w-[480px]">
+           <CreateProjectForm
+              project={projectToEdit}
+              onSuccess={() => {
+                handleSuccess();
+                setProjectToEdit(null);
+              }}
+            />
+        </DialogContent>
+      </Dialog>
+      
+      <AlertDialog open={!!projectToDelete} onOpenChange={(isOpen) => !isOpen && setProjectToDelete(null)}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the project &quot;{projectToDelete?.name}&quot; and all its associated tasks.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
