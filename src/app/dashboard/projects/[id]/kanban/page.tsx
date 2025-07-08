@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import type { Project, Task } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,8 @@ import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
 
-export default function KanbanPage({ params }: { params: { id: string } }) {
-  const { id: projectId } = params;
+export default function KanbanPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: projectId } = use(params);
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +55,9 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
         setIsLoading(false);
       }
     };
-    fetchProject();
+    if (projectId) {
+      fetchProject();
+    }
   }, [projectId]);
 
   if (isLoading) {
