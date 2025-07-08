@@ -124,7 +124,7 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
                   New Task
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[625px]">
+              <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
                 <CreateTaskForm
                   projectId={project.id}
                   allUsers={users}

@@ -250,7 +250,7 @@ export default function TasksPage() {
       </Card>
 
       <Dialog open={!!taskToEdit} onOpenChange={(isOpen) => !isOpen && setTaskToEdit(null)}>
-        <DialogContent className="sm:max-w-[625px]">
+        <DialogContent className="sm:max-w-[625px] max-h-[90vh] flex flex-col">
           {taskToEdit && (
             <CreateTaskForm 
               task={taskToEdit} 
