@@ -1,17 +1,34 @@
 import { NextResponse } from 'next/server';
-import { projects, users } from '@/lib/data';
+import { projects, users, tasks } from '@/lib/data';
 import type { Project } from '@/lib/types';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const limit = searchParams.get('limit');
   
-  let projectData = projects;
+  const projectsWithProgress = projects.map(project => {
+    const projectTasks = tasks.filter(task => task.projectId === project.id);
+    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+    const totalTasks = projectTasks.length;
+    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    let status: Project['status'] = 'On Track';
+    if (progress === 100) {
+        status = 'Completed';
+    } else if (project.status === 'Off Track' || project.status === 'At Risk') {
+        // Keep existing risk status unless completed
+        status = project.status;
+    }
+
+    return { ...project, progress, status };
+  });
+
+  let projectData = projectsWithProgress;
   
   if (limit) {
     const parsedLimit = parseInt(limit, 10);
     if (!isNaN(parsedLimit)) {
-      projectData = projects.slice(0, parsedLimit);
+      projectData = projectsWithProgress.slice(0, parsedLimit);
     }
   }
   

@@ -12,9 +12,25 @@ export async function GET(
     if (!project) {
       return NextResponse.json({ message: 'Project not found' }, { status: 404 });
     }
+    
+    const projectTasks = tasks.filter(task => task.projectId === project.id);
+    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+    const totalTasks = projectTasks.length;
+    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    let status: Project['status'] = 'On Track';
+    if (progress === 100) {
+        status = 'Completed';
+    } else if (project.status === 'Off Track' || project.status === 'At Risk') {
+        // Keep existing risk status unless completed
+        status = project.status;
+    }
+
+    const projectWithProgress = { ...project, progress, status };
+
 
     // In a real app, you would also check if the authenticated user has access to this project.
-    return NextResponse.json(project);
+    return NextResponse.json(projectWithProgress);
   } catch (error) {
     console.error(`Failed to fetch project ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while fetching the project' }, { status: 500 });
