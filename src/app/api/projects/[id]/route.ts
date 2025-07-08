@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { projects, tasks } from '@/lib/data';
+import { projects, tasks, users } from '@/lib/data';
 import type { Project } from '@/lib/types';
 
 export async function GET(
@@ -44,27 +44,34 @@ export async function PUT(
   try {
     const projectId = params.id;
     const body = await request.json();
-    const { name, description, color } = body;
+    const { name, description, color, members } = body;
 
     const projectIndex = projects.findIndex(p => p.id === projectId);
     if (projectIndex === -1) {
       return NextResponse.json({ message: 'Project not found' }, { status: 404 });
     }
 
-    if (!name) {
-      return NextResponse.json({ message: 'Project name is required' }, { status: 400 });
+    const projectToUpdate = projects[projectIndex];
+
+    if (name !== undefined) {
+      if (!name) {
+        return NextResponse.json({ message: 'Project name is required' }, { status: 400 });
+      }
+      projectToUpdate.name = name;
+    }
+    if (description !== undefined) {
+      projectToUpdate.description = description || '';
+    }
+    if (color !== undefined) {
+      projectToUpdate.color = color || '#6366f1';
+    }
+    if (members !== undefined) {
+      projectToUpdate.members = members;
     }
 
-    const updatedProject: Project = {
-      ...projects[projectIndex],
-      name,
-      description: description || '',
-      color: color || '#6366f1',
-    };
+    projects[projectIndex] = projectToUpdate;
 
-    projects[projectIndex] = updatedProject;
-
-    return NextResponse.json(updatedProject);
+    return NextResponse.json(projectToUpdate);
   } catch (error) {
     console.error(`Failed to update project ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while updating the project' }, { status: 500 });

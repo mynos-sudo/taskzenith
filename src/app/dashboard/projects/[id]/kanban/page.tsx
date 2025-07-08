@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useCallback } from "react";
 import type { Project, Task } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import {
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
+import { ManageMembersDialog } from "@/components/projects/manage-members-dialog";
 
 export default function KanbanPage({ params }: { params: Promise<{ id: string }> }) {
   const { id: projectId } = use(params);
@@ -26,6 +27,27 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
   const [tasksVersion, setTasksVersion] = useState(0);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isManageMembersOpen, setManageMembersOpen] = useState(false);
+
+  const fetchProject = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/projects/${projectId}`);
+      if (!response.ok) {
+        if (response.status === 404) {
+           throw new Error("Project not found");
+        }
+        throw new Error("Failed to fetch project data");
+      }
+      const data = await response.json();
+      setProject(data);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "An unknown error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [projectId]);
 
   const handleBoardUpdate = () => {
     setTasksVersion(v => v + 1);
@@ -35,30 +57,16 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
     }
   };
 
+  const handleProjectUpdate = () => {
+    setManageMembersOpen(false);
+    fetchProject();
+  };
+
   useEffect(() => {
-    const fetchProject = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const response = await fetch(`/api/projects/${projectId}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-             throw new Error("Project not found");
-          }
-          throw new Error("Failed to fetch project data");
-        }
-        const data = await response.json();
-        setProject(data);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "An unknown error occurred");
-      } finally {
-        setIsLoading(false);
-      }
-    };
     if (projectId) {
       fetchProject();
     }
-  }, [projectId]);
+  }, [projectId, fetchProject]);
 
   if (isLoading) {
     return (
@@ -106,10 +114,17 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
                   </Avatar>
                 ))}
               </div>
-              <Button variant="outline" size="sm">
-                <Users className="h-4 w-4 mr-2" />
-                Manage Members
-              </Button>
+              <Dialog open={isManageMembersOpen} onOpenChange={setManageMembersOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Users className="h-4 w-4 mr-2" />
+                    Manage Members
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  {project && <ManageMembersDialog project={project} allUsers={users} onSuccess={handleProjectUpdate} />}
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
           <div className="flex items-center gap-2">
