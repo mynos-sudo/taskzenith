@@ -25,13 +25,15 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/lib/types";
-import { AssigneeSuggester } from "./assignee-suggester";
+import { AssigneeSelector } from "./assignee-selector";
 import { DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
+import { Textarea } from "../ui/textarea";
 
 const formSchema = z.object({
   title: z.string().min(2, { message: "Task title must be at least 2 characters." }),
   description: z.string().optional(),
   priority: z.enum(["low", "medium", "high", "critical"]),
+  assignees: z.array(z.string()).optional(),
 });
 
 type CreateTaskFormProps = {
@@ -50,8 +52,11 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
       title: "",
       description: "",
       priority: "medium",
+      assignees: [],
     },
   });
+
+  const taskDescription = form.watch("description");
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
@@ -119,7 +124,7 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
                   <FormControl>
                     <SelectTrigger>
                       <SelectValue placeholder="Select a priority" />
-                    </SelectTrigger>
+                    </Trigger>
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="low">Low</SelectItem>
@@ -137,16 +142,39 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess }: CreateTaskFor
             control={form.control}
             name="description"
             render={({ field }) => (
-              <FormItem>
-                 <AssigneeSuggester
-                  allUsers={allUsers}
-                  taskDescription={field.value ?? ""}
-                  onDescriptionChange={field.onChange}
-                />
+                <FormItem>
+                <FormLabel>Description</FormLabel>
+                <FormControl>
+                    <Textarea
+                    placeholder="Describe the task in detail to get better AI suggestions. e.g. 'Develop a new responsive navigation bar using React and Tailwind CSS that supports nested dropdowns and is optimized for mobile.'"
+                    className="min-h-[100px]"
+                    {...field}
+                    />
+                </FormControl>
                 <FormMessage />
-              </FormItem>
+                </FormItem>
             )}
-          />
+        />
+        
+        <FormField
+            control={form.control}
+            name="assignees"
+            render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Assignees</FormLabel>
+                    <FormControl>
+                        <AssigneeSelector
+                            allUsers={allUsers}
+                            taskDescription={taskDescription || ""}
+                            selectedAssignees={field.value || []}
+                            onAssigneesChange={field.onChange}
+                        />
+                    </FormControl>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
+
 
           <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

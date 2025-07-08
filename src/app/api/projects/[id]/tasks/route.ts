@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { tasks } from '@/lib/data';
+import { tasks, users } from '@/lib/data';
 import type { Task } from '@/lib/types';
 
 export async function GET(
@@ -22,12 +22,14 @@ export async function POST(
 ) {
   try {
     const body = await request.json();
-    const { title, description, priority } = body;
+    const { title, description, priority, assignees: assigneeIds = [] } = body;
     const projectId = params.id;
 
     if (!title || !priority) {
       return NextResponse.json({ message: 'Title and priority are required' }, { status: 400 });
     }
+
+    const assignedUsers = users.filter(user => assigneeIds.includes(user.id));
 
     const newTask: Task = {
       id: `task-${Date.now()}`,
@@ -35,7 +37,7 @@ export async function POST(
       description: description || '',
       status: 'todo', // New tasks default to 'todo'
       priority,
-      assignees: [], // Assignees can be added later
+      assignees: assignedUsers,
       projectId,
     };
 
