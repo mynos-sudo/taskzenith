@@ -15,6 +15,8 @@ export type ProjectMember = {
 export type Project = {
   id: string;
   name: string;
+  description?: string;
+  color?: string;
   status: "On Track" | "At Risk" | "Off Track" | "Completed";
   members: ProjectMember[];
   progress: number;

@@ -11,6 +11,8 @@ export const projects: Project[] = [
   {
     id: "proj-1",
     name: "QuantumLeap Engine",
+    description: "A next-generation physics engine for hyper-realistic simulations.",
+    color: "#6d28d9",
     status: "On Track",
     members: [
       { user: users[0], role: "OWNER" },
@@ -21,6 +23,8 @@ export const projects: Project[] = [
   {
     id: "proj-2",
     name: "Project Nebula",
+    description: "Exploration and mapping of uncharted digital territories.",
+    color: "#be185d",
     status: "On Track",
     members: [
       { user: users[1], role: "OWNER" },
@@ -32,6 +36,8 @@ export const projects: Project[] = [
   {
     id: "proj-3",
     name: "DataWeave Initiative",
+    description: "An initiative to unify and streamline data processing pipelines.",
+    color: "#059669",
     status: "At Risk",
     members: [
       { user: users[0], role: "OWNER" },
@@ -42,6 +48,8 @@ export const projects: Project[] = [
   {
     id: "proj-4",
     name: "Phoenix Framework R&D",
+    description: "Research and development of a resilient, self-healing application framework.",
+    color: "#ea580c",
     status: "Completed",
     members: [
       { user: users[0], role: "MEMBER" },
@@ -53,6 +61,8 @@ export const projects: Project[] = [
   {
     id: "proj-5",
     name: "Mobile First Design System",
+    description: "Creating a comprehensive and accessible design system for all mobile platforms.",
+    color: "#2563eb",
     status: "Off Track",
     members: [
       { user: users[1], role: "OWNER" },
