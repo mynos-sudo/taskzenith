@@ -1,13 +1,13 @@
+
+"use client";
+
 import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import {
   Home,
-  LineChart,
   Package,
-  Package2,
   PanelLeft,
   Search,
-  ShoppingCart,
-  Users2,
   ListTodo,
   Rocket
 } from "lucide-react";
@@ -24,8 +24,66 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { UserNav } from "./user-nav";
 import { ThemeToggle } from "../theme-toggle";
+import { cn } from "@/lib/utils";
 
 export default function Header() {
+  const pathname = usePathname();
+
+  const navItems = [
+    { href: "/dashboard", icon: Home, label: "Dashboard" },
+    { href: "/dashboard/projects", icon: Package, label: "Projects" },
+    { href: "/dashboard/tasks", icon: ListTodo, label: "Tasks" },
+  ];
+
+  const breadcrumbs = () => {
+    const segments = pathname.split('/').filter(Boolean);
+    let pageTitle = 'Dashboard';
+
+    if (pathname.startsWith('/dashboard/projects/')) {
+      pageTitle = 'Kanban Board';
+      return (
+        <>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard">Dashboard</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard/projects">All Projects</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </>
+      );
+    }
+    
+    if (pathname === '/dashboard/projects') pageTitle = 'All Projects';
+    if (pathname === '/dashboard/tasks') pageTitle = 'All Tasks';
+
+    if (pathname === '/dashboard') {
+        return <BreadcrumbItem><BreadcrumbPage>Dashboard</BreadcrumbPage></BreadcrumbItem>;
+    }
+
+    return (
+        <>
+            <BreadcrumbItem>
+                <BreadcrumbLink asChild>
+                <Link href="/dashboard">Dashboard</Link>
+                </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+                <BreadcrumbPage>{pageTitle}</BreadcrumbPage>
+            </BreadcrumbItem>
+        </>
+    )
+  }
+
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
       <Sheet>
@@ -44,41 +102,25 @@ export default function Header() {
               <Rocket className="h-5 w-5 transition-all group-hover:scale-110" />
               <span className="sr-only">TaskZenith</span>
             </Link>
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <Home className="h-5 w-5" />
-              Dashboard
-            </Link>
-            <Link
-              href="/dashboard/projects"
-              className="flex items-center gap-4 px-2.5 text-foreground"
-            >
-              <Package className="h-5 w-5" />
-              Projects
-            </Link>
-            <Link
-              href="#"
-              className="flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground"
-            >
-              <ListTodo className="h-5 w-5" />
-              Tasks
-            </Link>
+            {navItems.map((item) => (
+                <Link
+                    key={item.label}
+                    href={item.href}
+                    className={cn(
+                        "flex items-center gap-4 px-2.5 text-muted-foreground hover:text-foreground",
+                        (pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href))) && "text-foreground"
+                    )}
+                >
+                    <item.icon className="h-5 w-5" />
+                    {item.label}
+                </Link>
+            ))}
           </nav>
         </SheetContent>
       </Sheet>
       <Breadcrumb className="hidden md:flex">
         <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="#">Dashboard</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>All Projects</BreadcrumbPage>
-          </BreadcrumbItem>
+          {breadcrumbs()}
         </BreadcrumbList>
       </Breadcrumb>
       <div className="relative ml-auto flex-1 md:grow-0">
