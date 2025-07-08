@@ -6,7 +6,7 @@ import type { Task, TaskStatus, KanbanColumn as KanbanColumnType } from "@/lib/t
 import { KanbanColumn } from "./kanban-column";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export default function KanbanBoard({ projectId }: { projectId: string }) {
+export default function KanbanBoard({ projectId, refreshTrigger }: { projectId: string, refreshTrigger: number }) {
   const [columns, setColumns] = useState<KanbanColumnType[]>(() => 
     kanbanColumns.map(col => ({ ...col, tasks: [] }))
   );
@@ -43,7 +43,7 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, refreshTrigger]);
   
   const moveTask = useCallback((taskId: string, targetColumnId: TaskStatus) => {
     // In a real app, you'd make an API call here to persist the change.

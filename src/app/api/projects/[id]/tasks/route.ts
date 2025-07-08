@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { tasks } from '@/lib/data';
+import type { Task } from '@/lib/types';
 
 export async function GET(
   request: Request,
@@ -12,5 +13,37 @@ export async function GET(
   } catch (error) {
     console.error(`Failed to fetch tasks for project ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while fetching tasks' }, { status: 500 });
+  }
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const body = await request.json();
+    const { title, description, priority } = body;
+    const projectId = params.id;
+
+    if (!title || !priority) {
+      return NextResponse.json({ message: 'Title and priority are required' }, { status: 400 });
+    }
+
+    const newTask: Task = {
+      id: `task-${Date.now()}`,
+      title,
+      description: description || '',
+      status: 'todo', // New tasks default to 'todo'
+      priority,
+      assignees: [], // Assignees can be added later
+      projectId,
+    };
+
+    tasks.unshift(newTask);
+
+    return NextResponse.json(newTask, { status: 201 });
+  } catch (error) {
+    console.error(`Failed to create task for project ${params.id}:`, error);
+    return NextResponse.json({ message: 'An error occurred while creating the task' }, { status: 500 });
   }
 }

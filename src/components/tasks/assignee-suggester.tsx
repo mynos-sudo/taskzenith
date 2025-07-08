@@ -11,9 +11,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
+import { Label } from "../ui/label";
 
-export function AssigneeSuggester({ allUsers }: { allUsers: User[] }) {
-  const [taskDescription, setTaskDescription] = useState("");
+interface AssigneeSuggesterProps {
+  allUsers: User[];
+  taskDescription: string;
+  onDescriptionChange: (value: string) => void;
+}
+
+export function AssigneeSuggester({ 
+  allUsers, 
+  taskDescription, 
+  onDescriptionChange 
+}: AssigneeSuggesterProps) {
   const [suggestions, setSuggestions] = useState<SuggestTaskAssigneeOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -49,19 +59,17 @@ export function AssigneeSuggester({ allUsers }: { allUsers: User[] }) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium mb-1">
-          Task Description
-        </label>
+      <div className="grid gap-2">
+        <Label htmlFor="description">Task Description (for AI suggestions)</Label>
         <Textarea
           id="description"
           placeholder="Describe the task in detail. For example: 'Develop a new responsive navigation bar using React and Tailwind CSS that supports nested dropdowns and is optimized for mobile.'"
           value={taskDescription}
-          onChange={(e) => setTaskDescription(e.target.value)}
+          onChange={(e) => onDescriptionChange(e.target.value)}
           className="min-h-[100px]"
         />
       </div>
-      <Button onClick={handleSuggestion} disabled={isLoading} className="w-full">
+      <Button type="button" onClick={handleSuggestion} disabled={isLoading || !taskDescription} className="w-full">
         {isLoading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (

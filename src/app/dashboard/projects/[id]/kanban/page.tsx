@@ -12,20 +12,22 @@ import { HTML5Backend } from "react-dnd-html5-backend";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AssigneeSuggester } from "@/components/tasks/assignee-suggester";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
+import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function KanbanPage({ params }: { params: { id: string } }) {
   const [project, setProject] = useState<Project | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
+  const [tasksVersion, setTasksVersion] = useState(0);
+
+  const handleTaskCreated = () => {
+    setTasksVersion(v => v + 1);
+    setCreateTaskOpen(false);
+  };
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -107,7 +109,7 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <Dialog>
+            <Dialog open={isCreateTaskOpen} onOpenChange={setCreateTaskOpen}>
               <DialogTrigger asChild>
                 <Button>
                   <PlusCircle className="h-4 w-4 mr-2" />
@@ -115,27 +117,18 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
                 </Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-[625px]">
-                <DialogHeader>
-                  <DialogTitle>Create New Task</DialogTitle>
-                  <DialogDescription>
-                    Fill in the details for the new task. Use the AI Suggester to find the right person for the job.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="task-title">Task Title</Label>
-                    <Textarea id="task-title" placeholder="e.g., Implement dark mode feature" />
-                  </div>
-                  <AssigneeSuggester allUsers={users} />
-                </div>
-                <Button type="submit" className="w-full">Create Task</Button>
+                <CreateTaskForm
+                  projectId={project.id}
+                  allUsers={users}
+                  onSuccess={handleTaskCreated}
+                />
               </DialogContent>
             </Dialog>
           </div>
         </div>
 
         <div className="flex-1 overflow-x-auto">
-          <KanbanBoard projectId={project.id} />
+          <KanbanBoard projectId={project.id} refreshTrigger={tasksVersion} />
         </div>
       </div>
     </DndProvider>
