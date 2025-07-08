@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -135,6 +136,8 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
   if (!project) {
     return <div>Project could not be loaded.</div>;
   }
+  
+  const OutlookIcon = summary ? outlookConfig[summary.outlook].icon : null;
 
   return (
     <DndProvider backend={HTML5Backend}>
@@ -219,7 +222,7 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
                 </div>
               )}
               {summaryError && <div className="text-destructive text-sm">{summaryError}</div>}
-              {summary && (
+              {summary && OutlookIcon && (
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-semibold mb-2">Summary</h4>
@@ -228,7 +231,7 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
                   <div>
                     <h4 className="font-semibold mb-2">Outlook</h4>
                     <Badge variant="outline" className={`border-0 ${outlookConfig[summary.outlook].bgColor} ${outlookConfig[summary.outlook].color}`}>
-                        <outlookConfig[summary.outlook].icon className="h-4 w-4 mr-2" />
+                        <OutlookIcon className="h-4 w-4 mr-2" />
                         {summary.outlook}
                     </Badge>
                   </div>
