@@ -83,9 +83,9 @@ export default function ProjectsPage() {
                   <TableCell className="hidden md:table-cell">
                      <div className="flex -space-x-2 overflow-hidden">
                         {project.members.map((member) => (
-                        <Avatar key={member.id} className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
-                            <AvatarImage src={member.avatar} />
-                            <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                        <Avatar key={member.user.id} className="inline-block h-8 w-8 rounded-full ring-2 ring-background">
+                            <AvatarImage src={member.user.avatar} />
+                            <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
                         </Avatar>
                         ))}
                     </div>

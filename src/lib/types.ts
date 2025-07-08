@@ -5,21 +5,30 @@ export type User = {
   avatar: string;
 };
 
+export type ProjectRole = "OWNER" | "MEMBER" | "VIEWER";
+
+export type ProjectMember = {
+  user: User;
+  role: ProjectRole;
+};
+
 export type Project = {
   id: string;
   name: string;
   status: "On Track" | "At Risk" | "Off Track" | "Completed";
-  members: User[];
+  members: ProjectMember[];
   progress: number;
 };
 
 export type TaskStatus = "todo" | "in-progress" | "done" | "backlog";
 
+export type Priority = "low" | "medium" | "high" | "critical";
+
 export type Task = {
   id: string;
   title: string;
   status: TaskStatus;
-  priority: "low" | "medium" | "high";
+  priority: Priority;
   assignees: User[];
   projectId: string;
 };

@@ -1,19 +1,20 @@
 "use client";
 
 import { useDrag } from "react-dnd";
-import type { Task } from "@/lib/types";
+import type { Priority, Task } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface KanbanCardProps {
   task: Task;
 }
 
-const priorityVariantMap: { [key: string]: "default" | "secondary" | "destructive" } = {
-    low: "secondary",
-    medium: "default",
-    high: "destructive",
+const priorityVariantMap: Record<Priority, BadgeProps["variant"]> = {
+    low: "outline",
+    medium: "secondary",
+    high: "default",
+    critical: "destructive",
 }
 
 export function KanbanCard({ task }: KanbanCardProps) {
@@ -35,7 +36,7 @@ export function KanbanCard({ task }: KanbanCardProps) {
       </CardHeader>
       <CardContent className="p-4 pt-0">
         <div className="flex items-center justify-between">
-            <Badge variant={priorityVariantMap[task.priority]}>{task.priority}</Badge>
+            <Badge variant={priorityVariantMap[task.priority] || "default"}>{task.priority}</Badge>
             <div className="flex -space-x-2 overflow-hidden">
                 {task.assignees.map((assignee) => (
                     <Avatar key={assignee.id} className="inline-block h-6 w-6 rounded-full ring-2 ring-background">

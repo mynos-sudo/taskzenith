@@ -36,11 +36,11 @@ export default function KanbanPage({ params }: { params: { id: string } }) {
               <div className="flex -space-x-2 overflow-hidden">
                 {project.members.map((member) => (
                   <Avatar
-                    key={member.id}
+                    key={member.user.id}
                     className="inline-block h-8 w-8 rounded-full ring-2 ring-background"
                   >
-                    <AvatarImage src={member.avatar} />
-                    <AvatarFallback>{member.name.charAt(0)}</AvatarFallback>
+                    <AvatarImage src={member.user.avatar} />
+                    <AvatarFallback>{member.user.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                 ))}
               </div>
