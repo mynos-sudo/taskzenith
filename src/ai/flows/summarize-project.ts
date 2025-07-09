@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { projects, tasks } from '@/lib/data';
+import { createClient } from '@/lib/supabase';
 
 const SummarizeProjectInputSchema = z.object({
   projectId: z.string().describe('The ID of the project to summarize.'),
@@ -73,19 +73,37 @@ const summarizeProjectFlow = ai.defineFlow(
     outputSchema: SummarizeProjectOutputSchema,
   },
   async ({ projectId }) => {
-    const project = projects.find(p => p.id === projectId);
-    if (!project) {
-        throw new Error(`Project with ID ${projectId} not found.`);
-    }
+    const supabase = createClient();
 
-    const projectTasks = tasks.filter(t => t.projectId === projectId);
+    // Fetch project details
+    const { data: projectData, error: projectError } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (projectError) throw new Error(`Project with ID ${projectId} not found: ${projectError.message}`);
+
+    // Fetch project tasks
+    const { data: tasksData, error: tasksError } = await supabase
+      .from('tasks')
+      .select('title, status, priority')
+      .eq('project_id', projectId);
     
+    if (tasksError) throw new Error(`Failed to fetch tasks for project ${projectId}: ${tasksError.message}`);
+
+    // Calculate progress
+    const totalTasks = tasksData.length;
+    const completedTasks = tasksData.filter(t => t.status === 'done').length;
+    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    
+    // Call the prompt with live data
     const { output } = await prompt({
-        projectName: project.name,
-        projectDescription: project.description,
-        projectStatus: project.status,
-        projectProgress: project.progress,
-        tasks: projectTasks.map(t => ({
+        projectName: projectData.name,
+        projectDescription: projectData.description ?? undefined,
+        projectStatus: projectData.status,
+        projectProgress: progress,
+        tasks: tasksData.map(t => ({
             title: t.title,
             status: t.status,
             priority: t.priority
