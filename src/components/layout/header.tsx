@@ -9,7 +9,8 @@ import {
   PanelLeft,
   Search,
   ListTodo,
-  Rocket
+  Rocket,
+  Users
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -36,6 +37,7 @@ export default function Header({ user }: { user: Profile }) {
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/projects", icon: Package, label: "Projects" },
     { href: "/dashboard/tasks", icon: ListTodo, label: "Tasks" },
+    { href: "/dashboard/team", icon: Users, label: "Team" },
   ];
 
   const breadcrumbs = () => {
@@ -67,6 +69,7 @@ export default function Header({ user }: { user: Profile }) {
     
     if (pathname === '/dashboard/projects') pageTitle = 'All Projects';
     if (pathname === '/dashboard/tasks') pageTitle = 'All Tasks';
+    if (pathname === '/dashboard/team') pageTitle = 'Team Overview';
     if (pathname === '/dashboard/profile') pageTitle = 'Profile';
     if (pathname === '/dashboard/billing') pageTitle = 'Billing';
     if (pathname === '/dashboard/settings') pageTitle = 'Settings';

@@ -8,7 +8,8 @@ import {
   Package,
   Settings,
   ListTodo,
-  Rocket
+  Rocket,
+  Users
 } from "lucide-react";
 import {
   Tooltip,
@@ -25,6 +26,7 @@ export default function Sidebar() {
     { href: "/dashboard", icon: Home, label: "Dashboard" },
     { href: "/dashboard/projects", icon: Package, label: "Projects" },
     { href: "/dashboard/tasks", icon: ListTodo, label: "Tasks" },
+    { href: "/dashboard/team", icon: Users, label: "Team" },
   ];
 
   return (
@@ -60,8 +62,11 @@ export default function Sidebar() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Link
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+                href="/dashboard/settings"
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8",
+                  pathname.startsWith('/dashboard/settings') && "bg-accent text-accent-foreground"
+                )}
               >
                 <Settings className="h-5 w-5" />
                 <span className="sr-only">Settings</span>
