@@ -15,10 +15,9 @@ type ProjectSchema = {
     updated_at: string; // timestamptz
 }
 
-type UserSchema = {
-    id: string; // text
+type ProfileSchema = {
+    id: string; // uuid, references auth.users.id
     name: string; // text
-    email: string; // text
     avatar: string | null; // text
 }
 type TaskSchema = {
@@ -36,12 +35,12 @@ type CommentSchema = {
     id: string; // text
     content: string; // text
     task_id: string; // text
-    author_id: string; // text
+    author_id: string; // uuid
     created_at: string; // timestamptz
 }
 type TaskAssigneeSchema = {
     task_id: string; // text
-    user_id: string; // text
+    user_id: string; // uuid
 }
 
 
@@ -53,10 +52,10 @@ export type Database = {
         Insert: Omit<ProjectSchema, 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<ProjectSchema, 'id' | 'created_at' | 'updated_at'>>;
       };
-      users: {
-        Row: UserSchema;
-        Insert: Omit<UserSchema, 'id'>;
-        Update: Partial<Omit<UserSchema, 'id'>>;
+      profiles: {
+        Row: ProfileSchema;
+        Insert: ProfileSchema;
+        Update: Partial<ProfileSchema>;
       };
       tasks: {
         Row: TaskSchema;

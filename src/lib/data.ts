@@ -4,6 +4,7 @@
 
 import type { Project, Task, User, KanbanColumn, Comment } from "./types";
 
+// The mock users array is now deprecated and will be replaced by real user data from Supabase Auth.
 export const users: User[] = [
   { id: "user-1", name: "Ada Lovelace", email: "ada@example.com", avatar: "https://i.pravatar.cc/150?u=ada" },
   { id: "user-2", name: "Grace Hopper", email: "grace@example.com", avatar: "https://i.pravatar.cc/150?u=grace" },
