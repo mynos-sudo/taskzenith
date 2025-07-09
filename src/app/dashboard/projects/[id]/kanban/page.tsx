@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useState, useCallback, use } from "react";
-import type { Project, Task, ProjectSummary, Priority } from "@/lib/types";
+import type { Project, Task, ProjectSummary } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { users } from "@/lib/data";
-import { Filter, PlusCircle, Users, Loader2, Wand2, Lightbulb, TrendingUp, AlertTriangle, BrainCircuit } from "lucide-react";
+import { Filter, PlusCircle, Users, Loader2, Wand2, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react";
 import KanbanBoard from "@/components/kanban/kanban-board";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -17,16 +17,13 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
 import { ManageMembersDialog } from "@/components/projects/manage-members-dialog";
 import { summarizeProject } from "@/ai/flows/summarize-project";
-import { generateTasks } from "@/ai/flows/generate-tasks-flow";
 import { useToast } from "@/hooks/use-toast";
-import { Textarea } from "@/components/ui/textarea";
 
 const outlookConfig = {
     Positive: { icon: TrendingUp, color: 'text-green-500', bgColor: 'bg-green-500/10' },
@@ -49,10 +46,6 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
   const [isSummaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-
-  const [isGenerateTasksOpen, setGenerateTasksOpen] = useState(false);
-  const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
-  const [aiGoal, setAiGoal] = useState("");
 
   const fetchProject = useCallback(async () => {
     setIsLoading(true);
@@ -107,52 +100,6 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
       setSummaryLoading(false);
     }
   }, [projectId, toast]);
-
-  const handleGenerateTasks = useCallback(async () => {
-    if (!aiGoal) return;
-    setIsGeneratingTasks(true);
-    try {
-        const result = await generateTasks({ goal: aiGoal });
-        const createdTasksPromises = result.tasks.map(task => 
-            fetch(`/api/projects/${projectId}/tasks`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: task.title,
-                    description: task.description,
-                    priority: task.priority,
-                }),
-            })
-        );
-        
-        const responses = await Promise.all(createdTasksPromises);
-        const failedCount = responses.filter(res => !res.ok).length;
-
-        if (failedCount > 0) {
-            throw new Error(`${failedCount} tasks could not be created.`);
-        }
-
-        toast({
-            title: "Success!",
-            description: `${result.tasks.length} tasks have been generated and added to your project.`,
-        });
-
-        setGenerateTasksOpen(false);
-        setAiGoal("");
-        handleBoardUpdate();
-
-    } catch (e) {
-        const errorMsg = e instanceof Error ? e.message : "An unknown error occurred";
-        toast({
-            title: "AI Task Generation Failed",
-            description: errorMsg,
-            variant: "destructive",
-        });
-    } finally {
-        setIsGeneratingTasks(false);
-    }
-  }, [aiGoal, projectId, toast]);
-
 
   useEffect(() => {
     if (projectId) {
@@ -222,38 +169,6 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
             </div>
           </div>
           <div className="flex items-center gap-2">
-             <Dialog open={isGenerateTasksOpen} onOpenChange={setGenerateTasksOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">
-                  <BrainCircuit className="h-4 w-4 mr-2" />
-                  Generate Tasks
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Generate Tasks with AI</DialogTitle>
-                  <DialogDescription>
-                    Describe a high-level goal, and the AI will break it down into actionable tasks for this project.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                    <Textarea 
-                      placeholder="e.g., Launch our new mobile app for iOS and Android by the end of Q3."
-                      value={aiGoal}
-                      onChange={(e) => setAiGoal(e.target.value)}
-                      rows={4}
-                      disabled={isGeneratingTasks}
-                    />
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleGenerateTasks} disabled={isGeneratingTasks || !aiGoal}>
-                    {isGeneratingTasks && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Generate
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-
             <Button variant="outline" onClick={handleGenerateSummary}>
               <Wand2 className="h-4 w-4 mr-2" />
               AI Summary
