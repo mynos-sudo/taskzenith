@@ -17,7 +17,17 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          // If a cookie is updated, update it on the response
+          // If a cookie is updated, update the cookies for the request and response
+          request.cookies.set({
+            name,
+            value,
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
           response.cookies.set({
             name,
             value,
@@ -25,7 +35,17 @@ export async function middleware(request: NextRequest) {
           })
         },
         remove(name: string, options: CookieOptions) {
-          // If a cookie is removed, delete it from the response
+          // If a cookie is removed, delete it from the request and response
+          request.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          })
           response.cookies.set({
             name,
             value: '',
@@ -36,33 +56,27 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // Refreshing the session - this is the crucial part!
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // refreshing the session before checking auth status
+  const { data: { user } } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
 
   // Protected routes: redirect to /login if not authenticated
   if (pathname.startsWith('/dashboard')) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
 
   // Auth routes: redirect to /dashboard if authenticated
   const authRoutes = ['/login', '/register']
-  if (authRoutes.includes(pathname)) {
-    if (session) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+  if (authRoutes.includes(pathname) && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
   
   // Public root: redirect to /dashboard if authenticated
-  if (pathname === '/') {
-    if (session) {
-       return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+  if (pathname === '/' && user) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
@@ -75,7 +89,9 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     *
+     * This ensures that the middleware runs on all pages and API routes.
      */
-    '/((?!_next/static|_next/image|favicon.ico|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }
