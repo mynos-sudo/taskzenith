@@ -48,12 +48,11 @@ const formSchema = z.object({
 
 type CreateTaskFormProps = {
   projectId: string;
-  allUsers: User[];
   onSuccess: () => void;
   task?: Task | null;
 };
 
-export function CreateTaskForm({ projectId, allUsers, onSuccess, task }: CreateTaskFormProps) {
+export function CreateTaskForm({ projectId, onSuccess, task }: CreateTaskFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const isEditMode = !!task;
@@ -251,7 +250,6 @@ export function CreateTaskForm({ projectId, allUsers, onSuccess, task }: CreateT
                       <FormLabel>Assignees</FormLabel>
                       <FormControl>
                           <AssigneeSelector
-                              allUsers={allUsers}
                               taskDescription={taskDescription || ""}
                               selectedAssignees={field.value || []}
                               onAssigneesChange={field.onChange}

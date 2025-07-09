@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import type { Project } from '@/lib/types';
 
 // A helper function to fetch tasks for a project and calculate progress.
-const getProgressForProject = async (projectId: string) => {
+const getProgressForProject = async (supabase: ReturnType<typeof createClient>, projectId: string) => {
     const { count: totalTasks, error: totalError } = await supabase
         .from('tasks')
         .select('*', { count: 'exact', head: true })
@@ -27,6 +27,7 @@ const getProgressForProject = async (projectId: string) => {
 
 export async function GET(request: Request) {
   try {
+    const supabase = createClient();
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get('limit');
     
@@ -47,7 +48,7 @@ export async function GET(request: Request) {
 
     const projectsWithProgress = await Promise.all(
         projectsData.map(async (project) => {
-            const progress = await getProgressForProject(project.id);
+            const progress = await getProgressForProject(supabase, project.id);
             
             let status: Project['status'] = project.status;
             if (progress === 100) {
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
+        const supabase = createClient();
         const body = await request.json();
         const { name, description, color } = body;
 

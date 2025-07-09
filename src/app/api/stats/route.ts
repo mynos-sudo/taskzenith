@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 
 export async function GET(request: Request) {
   try {
+    const supabase = createClient();
     const [
         { count: totalProjects },
         { count: activeTasks },
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
         supabase.from('projects').select('*', { count: 'exact', head: true }),
         supabase.from('tasks').select('*', { count: 'exact', head: true }).in('status', ['todo', 'in-progress']),
         supabase.from('tasks').select('*', { count: 'exact', head: true }).eq('status', 'done'),
-        supabase.from('users').select('*', { count: 'exact', head: true })
+        supabase.from('profiles').select('*', { count: 'exact', head: true })
     ]);
 
 

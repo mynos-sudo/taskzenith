@@ -2,29 +2,56 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { users } from "@/lib/data";
-import type { Task } from "@/lib/types";
+import { createClient } from "@/lib/supabase-browser";
+import type { Task, User } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
 
 export default function TasksOverview() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const currentUser = users[0]; // mock current user
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const supabase = createClient();
 
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchUserAndTasks = async () => {
       setIsLoading(true);
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+          setIsLoading(false);
+          return;
+      }
+      
+      // We don't have the full profile here, but the id is enough for the query.
+      const simplifiedUser = { id: user.id, name: '', email: user.email || '', avatar: '' };
+      setCurrentUser(simplifiedUser);
+
+      // We fetch all tasks and filter client-side for this overview
       try {
-        // We fetch all tasks and filter client-side for this overview
-        const response = await fetch('/api/tasks');
-        if (!response.ok) {
-            throw new Error('Failed to fetch tasks');
-        }
-        const allTasks: Task[] = await response.json();
-        const myTasks = allTasks
-          .filter(task => task.assignees.some(assignee => assignee.id === currentUser.id))
-          .filter(task => task.status !== 'done') // Only show active tasks
-          .slice(0, 5); // Limit to 5 tasks
+        const { data, error } = await supabase
+          .from('tasks')
+          .select('*, projects(name, color), task_assignees!inner(user_id)')
+          .eq('task_assignees.user_id', user.id)
+          .neq('status', 'done')
+          .limit(5);
+
+        if (error) throw error;
+        
+        const myTasks: Task[] = data.map((task: any) => ({
+            id: task.id,
+            title: task.title,
+            projectId: task.project_id,
+            priority: task.priority,
+            project: task.projects,
+            // The full task properties are not all needed for this component,
+            // so we can partially fill them.
+            status: 'todo',
+            assignees: [],
+            createdAt: '',
+            updatedAt: '',
+            comments: []
+        }));
+        
         setTasks(myTasks);
       } catch (error) {
         console.error("Failed to fetch tasks for overview", error);
@@ -33,8 +60,8 @@ export default function TasksOverview() {
       }
     };
 
-    fetchTasks();
-  }, [currentUser.id]);
+    fetchUserAndTasks();
+  }, []);
 
 
   if (isLoading) {

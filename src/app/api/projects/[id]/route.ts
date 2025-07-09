@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import type { Project } from '@/lib/types';
 
 // Helper to calculate progress based on tasks in Supabase.
-const getProgressForProject = async (projectId: string) => {
+const getProgressForProject = async (supabase: ReturnType<typeof createClient>, projectId: string) => {
     const { count: totalTasks, error: totalError } = await supabase
         .from('tasks')
         .select('*', { count: 'exact', head: true })
@@ -31,6 +31,7 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createClient();
     const { data: projectData, error } = await supabase
       .from('projects')
       .select('*')
@@ -44,7 +45,7 @@ export async function GET(
       throw error;
     }
     
-    const progress = await getProgressForProject(projectData.id);
+    const progress = await getProgressForProject(supabase, projectData.id);
     
     let status: Project['status'] = projectData.status;
     if (progress === 100 && status !== 'Completed') {
@@ -75,6 +76,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createClient();
     const projectId = params.id;
     const body = await request.json();
     const { name, description, color, status } = body;
@@ -109,7 +111,7 @@ export async function PUT(
       throw error;
     }
     
-    const progress = await getProgressForProject(updatedProject.id);
+    const progress = await getProgressForProject(supabase, updatedProject.id);
     const clientProject = {...updatedProject, progress, members: [] }
 
     return NextResponse.json(clientProject);
@@ -124,6 +126,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createClient();
     const projectId = params.id;
     const { error } = await supabase
       .from('projects')

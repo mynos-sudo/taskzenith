@@ -19,6 +19,7 @@ export default function KanbanBoard({
   const [columns, setColumns] = useState<KanbanColumnType[]>(() => 
     kanbanColumns.map(col => ({ ...col, tasks: [] }))
   );
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -29,20 +30,9 @@ export default function KanbanBoard({
       if (!response.ok) {
         throw new Error("Failed to fetch tasks");
       }
-      const tasks: Task[] = await response.json();
-      setColumns(prevColumns => {
-        const columnsMap = new Map<TaskStatus, Task[]>();
-        prevColumns.forEach(col => columnsMap.set(col.id, []));
-        tasks.forEach(task => {
-            if (columnsMap.has(task.status)) {
-                columnsMap.get(task.status)!.push(task);
-            }
-        });
-        return prevColumns.map(col => ({
-          ...col,
-          tasks: columnsMap.get(col.id) || []
-        }));
-      });
+      const fetchedTasks: Task[] = await response.json();
+      setTasks(fetchedTasks);
+
     } catch (error) {
       console.error("Failed to fetch tasks", error);
       toast({
@@ -58,40 +48,49 @@ export default function KanbanBoard({
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks, refreshTrigger]);
+
+  useEffect(() => {
+    setColumns(prevColumns => {
+        const columnsMap = new Map<TaskStatus, Task[]>();
+        prevColumns.forEach(col => columnsMap.set(col.id, []));
+        tasks.forEach(task => {
+            if (columnsMap.has(task.status)) {
+                columnsMap.get(task.status)!.push(task);
+            }
+        });
+        return prevColumns.map(col => ({
+          ...col,
+          tasks: columnsMap.get(col.id) || []
+        }));
+      });
+  }, [tasks])
   
   const moveTask = useCallback(async (taskId: string, targetColumnId: TaskStatus) => {
-    let originalColumns = columns;
+    let taskToMove = tasks.find(t => t.id === taskId);
+    if (!taskToMove) return;
+
+    const originalTasks = [...tasks];
+    
     // Optimistic UI update
-    let taskToMove: Task | undefined;
-
-    const newColumns = columns.map(col => {
-        const taskIndex = col.tasks.findIndex(t => t.id === taskId);
-        if (taskIndex > -1) {
-            taskToMove = col.tasks[taskIndex];
-            col.tasks.splice(taskIndex, 1);
-        }
-        return col;
-    });
-
-    if (taskToMove) {
-        taskToMove.status = targetColumnId;
-        const targetColumn = newColumns.find(col => col.id === targetColumnId);
-        targetColumn?.tasks.push(taskToMove);
-        setColumns(newColumns);
-    } else {
-        return; // Should not happen
-    }
+    const updatedTasks = tasks.map(t => 
+        t.id === taskId ? { ...t, status: targetColumnId } : t
+    );
+    setTasks(updatedTasks);
 
     // API call to persist the change
     try {
         const response = await fetch(`/api/tasks/${taskId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: targetColumnId, title: taskToMove.title, priority: taskToMove.priority }), // Send required fields
+            body: JSON.stringify({ status: targetColumnId }),
         });
         if (!response.ok) {
             throw new Error('Failed to update task status');
         }
+        // Optionally update the task with the response from the server
+        const updatedTaskFromServer = await response.json();
+        setTasks(currentTasks => currentTasks.map(t => t.id === taskId ? updatedTaskFromServer : t));
+
     } catch (error) {
         console.error("Failed to move task", error);
         toast({
@@ -100,10 +99,10 @@ export default function KanbanBoard({
             variant: "destructive"
         });
         // Revert UI on failure
-        setColumns(originalColumns);
+        setTasks(originalTasks);
     }
 
-  }, [columns, toast]);
+  }, [tasks, toast]);
 
   if (isLoading) {
     return (

@@ -3,9 +3,8 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, UserPlus } from "lucide-react";
 import type { Task, Project, Priority, TaskStatus } from "@/lib/types";
-import { users } from "@/lib/data"; // for getting project name and color
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,11 +113,10 @@ export default function TasksPage() {
   const handleUpdate = () => {
     fetchTasks();
     if (taskToView) {
-      // Refresh task details if modal is open
       const updatedTask = tasks.find(t => t.id === taskToView.id);
       setTaskToView(updatedTask || null);
     }
-  }
+  };
 
   const handleDelete = async () => {
     if (!taskToDelete) return;
@@ -266,7 +264,6 @@ export default function TasksPage() {
             <CreateTaskForm 
               task={taskToEdit} 
               projectId={taskToEdit.projectId} 
-              allUsers={users}
               onSuccess={() => {
                 setTaskToEdit(null);
                 fetchTasks();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -10,24 +10,47 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { cn } from "@/lib/utils";
 import type { User } from "@/lib/types";
 import { Badge } from "../ui/badge";
+import { createClient } from "@/lib/supabase-browser";
+import { Skeleton } from "../ui/skeleton";
 
 interface AssigneeSelectorProps {
-  allUsers: User[];
   taskDescription: string;
   selectedAssignees: string[];
   onAssigneesChange: (assigneeIds: string[]) => void;
 }
 
 export function AssigneeSelector({
-  allUsers,
   taskDescription,
   selectedAssignees,
   onAssigneesChange,
 }: AssigneeSelectorProps) {
+  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [reasoning, setReasoning] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoadingUsers(true);
+      const supabase = createClient();
+      const { data, error } = await supabase.from('profiles').select('*');
+      if (error) {
+        toast({ title: "Error", description: "Could not fetch users." });
+      } else {
+        const users = data.map(profile => ({
+            id: profile.id,
+            name: profile.name,
+            email: `user-${profile.id}@example.com`,
+            avatar: profile.avatar ?? `https://i.pravatar.cc/150?u=${profile.id}`
+        }))
+        setAllUsers(users);
+      }
+      setIsLoadingUsers(false);
+    };
+    fetchUsers();
+  }, [toast]);
 
   const handleSuggestion = async () => {
     if (!taskDescription) {
@@ -38,7 +61,7 @@ export function AssigneeSelector({
       });
       return;
     }
-    setIsLoading(true);
+    setIsLoadingAI(true);
     setSuggestions([]);
     setReasoning("");
     try {
@@ -56,7 +79,7 @@ export function AssigneeSelector({
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      setIsLoadingAI(false);
     }
   };
 
@@ -79,10 +102,10 @@ export function AssigneeSelector({
             type="button"
             variant="outline"
             onClick={handleSuggestion}
-            disabled={isLoading || !taskDescription}
+            disabled={isLoadingAI || !taskDescription || isLoadingUsers}
             className="w-full"
         >
-            {isLoading ? (
+            {isLoadingAI ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
             <Wand2 className="mr-2 h-4 w-4" />
@@ -117,34 +140,42 @@ export function AssigneeSelector({
                      </div>
                  )}
                  <div className="max-h-48 overflow-y-auto">
-                    <div className="space-y-1">
-                        {allUsers.map((user) => {
-                            const isSelected = selectedAssignees.includes(user.id);
-                            const isSuggested = suggestedUserIds.includes(user.id);
-                            return (
-                                <div
-                                    key={user.id}
-                                    onClick={() => toggleAssignee(user.id)}
-                                    className={cn(
-                                        "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted/80",
-                                        isSelected && "bg-muted font-semibold",
-                                        isSuggested && !isSelected && "bg-accent/20"
-                                    )}
-                                >
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={user.avatar} alt={user.name} />
-                                        <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
-                                    </Avatar>
-                                    <span>{user.name}</span>
-                                    {isSuggested && (
-                                        <Badge variant={isSelected ? "default" : "outline"} className="ml-auto">
-                                            Suggested
-                                        </Badge>
-                                    )}
-                                </div>
-                            )
-                        })}
-                    </div>
+                    {isLoadingUsers ? (
+                        <div className="space-y-1 p-2">
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                            <Skeleton className="h-10 w-full" />
+                        </div>
+                    ) : (
+                        <div className="space-y-1">
+                            {allUsers.map((user) => {
+                                const isSelected = selectedAssignees.includes(user.id);
+                                const isSuggested = suggestedUserIds.includes(user.id);
+                                return (
+                                    <div
+                                        key={user.id}
+                                        onClick={() => toggleAssignee(user.id)}
+                                        className={cn(
+                                            "flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted/80",
+                                            isSelected && "bg-muted font-semibold",
+                                            isSuggested && !isSelected && "bg-accent/20"
+                                        )}
+                                    >
+                                        <Avatar className="h-8 w-8">
+                                            <AvatarImage src={user.avatar} alt={user.name} />
+                                            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <span>{user.name}</span>
+                                        {isSuggested && (
+                                            <Badge variant={isSelected ? "default" : "outline"} className="ml-auto">
+                                                Suggested
+                                            </Badge>
+                                        )}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                  </div>
             </CardContent>
         </Card>

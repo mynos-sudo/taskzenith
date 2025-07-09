@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase';
 import type { Comment } from '@/lib/types';
-import { users } from '@/lib/data'; // kept for mock user
 
 export async function POST(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = createClient();
     const body = await request.json();
     const { content } = body;
     const taskId = params.id;
@@ -16,17 +16,27 @@ export async function POST(
       return NextResponse.json({ message: 'Comment content is required' }, { status: 400 });
     }
     
-    // In a real app, you'd get the user from the auth session
-    const author = users[0];
-    const commentId = `comment-${Date.now()}`;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: authorProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (profileError || !authorProfile) {
+        return NextResponse.json({ message: 'Profile not found' }, { status: 404 });
+    }
 
     const { data: newCommentData, error } = await supabase
       .from('comments')
       .insert({
-        id: commentId,
         content,
         task_id: taskId,
-        author_id: author.id,
+        author_id: user.id,
       })
       .select()
       .single();
@@ -40,7 +50,12 @@ export async function POST(
       id: newCommentData.id,
       content: newCommentData.content,
       createdAt: newCommentData.created_at,
-      author: author,
+      author: {
+        id: authorProfile.id,
+        name: authorProfile.name,
+        email: user.email!,
+        avatar: authorProfile.avatar ?? `https://i.pravatar.cc/150?u=${user.id}`,
+      }
     };
 
     return NextResponse.json(clientComment, { status: 201 });
