@@ -66,6 +66,26 @@ export async function loginWithGoogle() {
     }
 }
 
+export async function loginWithGitHub() {
+    const supabase = createClient();
+    const origin = headers().get('origin');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+            redirectTo: `${origin}/auth/callback`,
+        },
+    });
+
+    if (error) {
+        return redirect(`/login?message=Could not authenticate with GitHub: ${error.message}`);
+    }
+
+    if (data.url) {
+        redirect(data.url);
+    }
+}
+
 
 export async function logout() {
     const supabase = createClient();

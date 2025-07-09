@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { register, loginWithGoogle } from "../actions";
+import { register, loginWithGoogle, loginWithGitHub } from "../actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Rocket } from "lucide-react";
+import { Github, Rocket } from "lucide-react";
 
 export default function RegisterPage({
   searchParams,
@@ -67,9 +67,25 @@ export default function RegisterPage({
                 Create an account
               </Button>
             </form>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
             <form action={loginWithGoogle}>
                 <Button variant="outline" className="w-full" type="submit">
                   Sign up with Google
+                </Button>
+            </form>
+            <form action={loginWithGitHub}>
+                <Button variant="outline" className="w-full" type="submit">
+                  <Github className="mr-2 h-4 w-4" />
+                  Sign up with GitHub
                 </Button>
             </form>
         </div>
