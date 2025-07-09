@@ -1,3 +1,7 @@
+// DEPRECATION NOTICE: This file contains mock data for prototyping.
+// It is being progressively replaced by live data from Firebase Firestore.
+// Please refer to API routes and new service files for data fetching logic.
+
 import type { Project, Task, User, KanbanColumn, Comment } from "./types";
 
 export const users: User[] = [

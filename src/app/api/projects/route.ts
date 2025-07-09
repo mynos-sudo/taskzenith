@@ -1,66 +1,95 @@
 import { NextResponse } from 'next/server';
-import { projects, users, tasks } from '@/lib/data';
+import { db } from '@/lib/firebase';
 import type { Project } from '@/lib/types';
+import { tasks as mockTasks } from '@/lib/data'; // Keep mock tasks for now
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const limit = searchParams.get('limit');
-  
-  const projectsWithProgress = projects.map(project => {
-    const projectTasks = tasks.filter(task => task.projectId === project.id);
+// A helper function to fetch tasks for a project and calculate progress.
+// In a real app, this would also fetch from Firestore.
+const getProgressForProject = (projectId: string) => {
+    const projectTasks = mockTasks.filter(task => task.projectId === projectId);
     const completedTasks = projectTasks.filter(task => task.status === 'done').length;
     const totalTasks = projectTasks.length;
-    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+};
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get('limit');
     
-    let status: Project['status'] = 'On Track';
-    if (progress === 100) {
-        status = 'Completed';
-    } else if (project.status === 'Off Track' || project.status === 'At Risk') {
-        // Keep existing risk status unless completed
-        status = project.status;
+    if (!db) {
+      throw new Error("Firestore is not initialized.");
     }
 
-    return { ...project, progress, status };
-  });
+    let query: admin.firestore.Query<admin.firestore.DocumentData> = db.collection('projects');
 
-  let projectData = projectsWithProgress;
-  
-  if (limit) {
-    const parsedLimit = parseInt(limit, 10);
-    if (!isNaN(parsedLimit)) {
-      projectData = projectsWithProgress.slice(0, parsedLimit);
+    if (limitParam) {
+      const parsedLimit = parseInt(limitParam, 10);
+      if (!isNaN(parsedLimit)) {
+        query = query.limit(parsedLimit);
+      }
     }
+
+    const projectsSnapshot = await query.get();
+    const projectsData = projectsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
+
+    // For now, we'll continue calculating progress based on mock tasks
+    // until the tasks are also migrated to Firestore.
+    const projectsWithProgress = projectsData.map(project => {
+        const progress = getProgressForProject(project.id);
+        
+        let status: Project['status'] = project.status;
+        if (progress === 100) {
+            status = 'Completed';
+        } else if (project.status === 'Completed') {
+            // If progress is not 100 but status is completed, revert to On Track
+            status = 'On Track';
+        }
+
+        return { ...project, progress, status };
+    });
+
+    return NextResponse.json(projectsWithProgress);
+  } catch (error) {
+      console.error('Failed to fetch projects from Firestore:', error);
+      return NextResponse.json({ message: 'An error occurred while fetching projects.' }, { status: 500 });
   }
-  
-  // In a real app, you'd fetch this from a database.
-  return NextResponse.json(projectData);
 }
 
 export async function POST(request: Request) {
     try {
+        if (!db) {
+          throw new Error("Firestore is not initialized.");
+        }
+
         const body = await request.json();
         const { name, description, color } = body;
 
         if (!name) {
             return NextResponse.json({ message: 'Project name is required' }, { status: 400 });
         }
+        
+        // In a real app, you'd get the owner from Firebase Auth session
+        const ownerId = 'user-1'; // Mock owner for now
 
-        // In a real app, you'd get the user from the auth session
-        const owner = users[0]; 
-
-        const newProject: Project = {
-            id: `proj-${Date.now()}`,
+        const newProjectData = {
             name,
             description: description || '',
             status: 'On Track',
-            members: [{ user: owner, role: 'OWNER' }],
-            progress: 0,
+            members: [{ userId: ownerId, role: 'OWNER' }], // Storing only IDs now
             color: color || '#6366f1',
         };
 
-        // For this mock, we are persisting it to the in-memory array.
-        projects.unshift(newProject);
-
+        const docRef = await db.collection('projects').add(newProjectData);
+        
+        const newProject = {
+          id: docRef.id,
+          ...newProjectData,
+          progress: 0, // New projects have 0 progress
+          // We'd need to fetch the user data to return the full member object
+          members: []
+        };
+        
         return NextResponse.json(newProject, { status: 201 });
     } catch (error) {
         console.error('Project creation failed:', error);
