@@ -17,19 +17,26 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value
         },
         set(name: string, value: string, options: CookieOptions) {
-          request.cookies.set({ name, value, ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value, ...options })
+          // If a cookie is updated, update it on the response
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+          })
         },
         remove(name: string, options: CookieOptions) {
-          request.cookies.set({ name, value: '', ...options })
-          response = NextResponse.next({ request: { headers: request.headers } })
-          response.cookies.set({ name, value: '', ...options })
+          // If a cookie is removed, delete it from the response
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+          })
         },
       },
     }
   )
 
+  // Refreshing the session - this is the crucial part!
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -57,7 +64,6 @@ export async function middleware(request: NextRequest) {
        return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
-
 
   return response
 }
