@@ -11,16 +11,19 @@ export async function middleware(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl === 'YOUR_SUPABASE_URL') {
-    const errorText = `Action Required: Your Supabase environment variables are not configured correctly.
-Please open the '.env.local' file in the file explorer on the left.
-Then, replace the placeholder values with your actual Supabase URL and Anon Key.
-You can find these keys in your Supabase project settings under 'API'.
-After saving the file, you MUST restart the development server for the changes to take effect.`;
+  if (!supabaseUrl || supabaseUrl === 'YOUR_SUPABASE_URL' || !supabaseAnonKey || supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
+    const errorText = `Action Requise: Vos clés d'API Supabase ne sont pas configurées.
+
+Comment corriger :
+1. Ouvrez le fichier '.env.local' dans l'explorateur de fichiers.
+2. Allez sur le site de Supabase et ouvrez les paramètres API de votre projet.
+3. Copiez vos clés ("Project URL" et "anon public key").
+4. Collez-les dans le fichier '.env.local'.
+5. **TRÈS IMPORTANT** : Redémarrez le serveur de développement.`;
     
     return new NextResponse(
         `<div style="font-family: sans-serif; padding: 2rem; background-color: #fff3f3; border: 1px solid #ffcccc; border-radius: 8px;">
-            <h1 style="color: #d9534f;">Configuration Error</h1>
+            <h1 style="color: #d9534f;">Action Manuelle Requise</h1>
             <p style="font-size: 1.1rem; color: #333; white-space: pre-wrap;">${errorText}</p>
          </div>`,
         { 
@@ -33,14 +36,19 @@ After saving the file, you MUST restart the development server for the changes t
   try {
     new URL(supabaseUrl);
   } catch (e) {
-     const errorText = `The Supabase URL you provided in '.env.local' is not a valid URL.
-It should look exactly like this: https://<your-project-ref>.supabase.co
-Please correct the URL in the .env.local file and restart the development server.
-Error: ${(e as Error).message}`;
+     const errorText = `Action Requise: Votre URL Supabase dans le fichier '.env.local' est invalide.
+Il semble que la partie "<your-project-ref>" (la référence de votre projet) est manquante ou incorrecte.
+
+Comment corriger (dernière étape !) :
+1. Allez dans votre tableau de bord Supabase.
+2. Naviguez vers "Project Settings", puis "API".
+3. Copiez l'URL complète qui se trouve dans la section "Project URL".
+4. Collez cette URL dans le fichier \`.env.local\` pour la variable NEXT_PUBLIC_SUPABASE_URL.
+5. **TRÈS IMPORTANT** : Redémarrez le serveur de développement.`;
 
      return new NextResponse(
         `<div style="font-family: sans-serif; padding: 2rem; background-color: #fff3f3; border: 1px solid #ffcccc; border-radius: 8px;">
-            <h1 style="color: #d9534f;">Configuration Error</h1>
+            <h1 style="color: #d9534f;">Action Manuelle Requise</h1>
             <p style="font-size: 1.1rem; color: #333; white-space: pre-wrap;">${errorText}</p>
          </div>`,
         { 
