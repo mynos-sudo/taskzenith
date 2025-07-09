@@ -7,33 +7,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { updatePassword } from "../actions";
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!currentPassword || !newPassword) {
+    setIsSubmitting(true);
+    
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const result = await updatePassword(formData);
+    
+    if (result.error) {
       toast({
         title: "Error",
-        description: "Please fill in both password fields.",
+        description: result.error,
         variant: "destructive",
       });
-      return;
+    } else {
+      toast({
+        title: "Success!",
+        description: result.success,
+      });
+      form.reset(); // Clear the form field
     }
-    setIsLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsLoading(false);
-    setCurrentPassword("");
-    setNewPassword("");
-    toast({
-      title: "Success!",
-      description: "Your password has been changed. You would normally be logged out now.",
-    });
+    
+    setIsSubmitting(false);
   };
 
   return (
@@ -47,36 +49,27 @@ export default function SettingsPage() {
       <form onSubmit={handleSubmit}>
         <Card>
           <CardHeader>
-            <CardTitle>Password</CardTitle>
+            <CardTitle>Change Password</CardTitle>
             <CardDescription>
-              Change your password here. After saving, you'll be logged out.
+              Enter a new password below. After saving, you might be logged out.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="current-password">Current Password</Label>
-              <Input 
-                id="current-password" 
-                type="password" 
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
               <Label htmlFor="new-password">New Password</Label>
               <Input 
-                id="new-password" 
-                type="password" 
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                disabled={isLoading}
+                id="new-password"
+                name="newPassword"
+                type="password"
+                required
+                minLength={6}
+                disabled={isSubmitting}
               />
             </div>
           </CardContent>
           <CardFooter className="border-t px-6 py-4">
-            <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Save Changes
             </Button>
           </CardFooter>
