@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { login } from "../actions";
+import { login, loginWithGoogle } from "../actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -28,46 +28,50 @@ export default function LoginPage({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={login} className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="m@example.com"
-              required
-            />
-          </div>
-          <div className="grid gap-2">
-            <div className="flex items-center">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="#"
-                className="ml-auto inline-block text-sm underline"
-              >
-                Forgot your password?
-              </Link>
+        <div className="grid gap-4">
+          <form action={login} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+              />
             </div>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              required
-            />
-          </div>
-          {searchParams.message && (
-             <div className="text-sm font-medium text-destructive">
-               {searchParams.message}
-             </div>
-           )}
-          <Button type="submit" className="w-full">
-            Login
-          </Button>
-          <Button variant="outline" className="w-full" formAction="" disabled>
-            Login with Google
-          </Button>
-        </form>
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  href="#"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                required
+              />
+            </div>
+            {searchParams.message && (
+              <div className="text-sm font-medium text-destructive">
+                {searchParams.message}
+              </div>
+            )}
+            <Button type="submit" className="w-full">
+              Login
+            </Button>
+          </form>
+          <form action={loginWithGoogle}>
+            <Button variant="outline" className="w-full" type="submit">
+              Login with Google
+            </Button>
+          </form>
+        </div>
         <div className="mt-4 text-center text-sm">
           Don&apos;t have an account?{" "}
           <Link href="/register" className="underline">

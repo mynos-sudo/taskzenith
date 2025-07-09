@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 
@@ -33,8 +34,6 @@ export async function register(formData: FormData) {
     options: {
       data: {
         name,
-        // You can add a default avatar here if you want
-        // avatar_url: `https://i.pravatar.cc/150?u=${email}`
       },
     },
   })
@@ -46,6 +45,27 @@ export async function register(formData: FormData) {
   revalidatePath('/', 'layout')
   redirect('/dashboard')
 }
+
+export async function loginWithGoogle() {
+    const supabase = createClient();
+    const origin = headers().get('origin');
+
+    const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+            redirectTo: `${origin}/auth/callback`,
+        },
+    });
+
+    if (error) {
+        return redirect(`/login?message=Could not authenticate with Google: ${error.message}`);
+    }
+
+    if (data.url) {
+        redirect(data.url);
+    }
+}
+
 
 export async function logout() {
     const supabase = createClient();
