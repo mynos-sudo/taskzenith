@@ -5,8 +5,7 @@ import type { Project, Task, ProjectSummary } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { users } from "@/lib/data";
-import { Filter, PlusCircle, Users, Loader2, Wand2, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react";
+import { PlusCircle, Users, Loader2, Wand2, Lightbulb, TrendingUp, AlertTriangle } from "lucide-react";
 import KanbanBoard from "@/components/kanban/kanban-board";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -22,7 +21,6 @@ import {
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
-import { ManageMembersDialog } from "@/components/projects/manage-members-dialog";
 import { summarizeProject } from "@/ai/flows/summarize-project";
 import { generateTasks } from "@/ai/flows/generate-tasks-flow";
 import { useToast } from "@/hooks/use-toast";
@@ -43,7 +41,6 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const [isCreateTaskOpen, setCreateTaskOpen] = useState(false);
   const [tasksVersion, setTasksVersion] = useState(0);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isManageMembersOpen, setManageMembersOpen] = useState(false);
   
   const [isSummaryDialogOpen, setSummaryDialogOpen] = useState(false);
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
@@ -80,11 +77,6 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
     if (selectedTask) {
       setSelectedTask(null);
     }
-  };
-
-  const handleProjectUpdate = () => {
-    setManageMembersOpen(false);
-    fetchProject();
   };
 
   const handleGenerateSummary = useCallback(async () => {
@@ -214,17 +206,13 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
                   </Avatar>
                 ))}
               </div>
-              <Dialog open={isManageMembersOpen} onOpenChange={setManageMembersOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Users className="h-4 w-4 mr-2" />
-                    Manage Members
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-md">
-                  {project && <ManageMembersDialog project={project} allUsers={users} onSuccess={handleProjectUpdate} />}
-                </DialogContent>
-              </Dialog>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => toast({ title: "Feature not available", description: "Managing project members is not yet implemented."})}>
+                <Users className="h-4 w-4 mr-2" />
+                Manage Members
+              </Button>
             </div>
           </div>
           <div className="flex items-center gap-2">
