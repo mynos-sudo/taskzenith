@@ -10,10 +10,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { users } from "@/lib/data";
+import type { Profile } from "@/lib/types";
+import { logout } from "@/app/(auth)/actions";
 
-export function UserNav() {
-  const user = users[0]; // mock user
+export function UserNav({ user }: { user: Profile }) {
+  
+  if (!user) {
+    return null;
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -46,9 +51,13 @@ export function UserNav() {
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          Log out
-        </DropdownMenuItem>
+        <form action={logout}>
+          <button type="submit" className="w-full">
+            <DropdownMenuItem>
+              Log out
+            </DropdownMenuItem>
+          </button>
+        </form>
       </DropdownMenuContent>
     </DropdownMenu>
   );

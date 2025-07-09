@@ -26,8 +26,9 @@ import { UserNav } from "./user-nav";
 import { ThemeToggle } from "../theme-toggle";
 import { cn } from "@/lib/utils";
 import { useSearchStore } from "@/hooks/use-search-store";
+import type { Profile } from "@/lib/types";
 
-export default function Header() {
+export default function Header({ user }: { user: Profile }) {
   const pathname = usePathname();
   const { query, setQuery } = useSearchStore();
 
@@ -140,7 +141,7 @@ export default function Header() {
         />
       </div>
       <ThemeToggle />
-      <UserNav />
+      <UserNav user={user} />
     </header>
   );
 }

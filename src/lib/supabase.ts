@@ -1,95 +1,37 @@
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { Database } from './types'
 
-// This file is typed for the 'public' schema.
-// You can add more schemas by duplicating this file and changing the generic.
-// See: https://supabase.com/docs/guides/api/generating-types
+export const createClient = () => {
+  const cookieStore = cookies()
 
-// Defines the schema for the 'projects' table to ensure type safety.
-type ProjectSchema = {
-    id: string; // uuid
-    name: string;
-    description: string | null;
-    color: string | null;
-    status: "On Track" | "At Risk" | "Off Track" | "Completed";
-    created_at: string; // timestamptz
-    updated_at: string; // timestamptz
-}
-
-type ProfileSchema = {
-    id: string; // uuid, references auth.users.id
-    name: string; // text
-    avatar: string | null; // text
-}
-type TaskSchema = {
-    id: string; // text
-    title: string; // text
-    description: string | null; // text
-    status: "todo" | "in-progress" | "done" | "backlog";
-    priority: "low" | "medium" | "high" | "critical";
-    due_date: string | null; // timestamptz
-    project_id: string; // uuid
-    created_at: string; // timestamptz
-    updated_at: string; // timestamptz
-}
-type CommentSchema = {
-    id: string; // text
-    content: string; // text
-    task_id: string; // text
-    author_id: string; // uuid
-    created_at: string; // timestamptz
-}
-type TaskAssigneeSchema = {
-    task_id: string; // text
-    user_id: string; // uuid
-}
-
-
-export type Database = {
-  public: {
-    Tables: {
-      projects: {
-        Row: ProjectSchema;
-        Insert: Omit<ProjectSchema, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<ProjectSchema, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      profiles: {
-        Row: ProfileSchema;
-        Insert: ProfileSchema;
-        Update: Partial<ProfileSchema>;
-      };
-      tasks: {
-        Row: TaskSchema;
-        Insert: Omit<TaskSchema, 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<TaskSchema, 'id' | 'created_at' | 'project_id'>>;
-      };
-      comments: {
-        Row: CommentSchema;
-        Insert: Omit<CommentSchema, 'id' | 'created_at'>;
-        Update: Partial<Omit<CommentSchema, 'id' | 'created_at'>>;
-      };
-      task_assignees: {
-        Row: TaskAssigneeSchema;
-        Insert: TaskAssigneeSchema;
-        Update: never;
-      }
-    };
-    Enums: {
-      project_status: "On Track" | "At Risk" | "Off Track" | "Completed";
-      task_status: "todo" | "in-progress" | "done" | "backlog";
-      task_priority: "low" | "medium" | "high" | "critical";
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value, ...options })
+          } catch (error) {
+            // The `set` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+        remove(name: string, options: CookieOptions) {
+          try {
+            cookieStore.set({ name, value: '', ...options })
+          } catch (error) {
+            // The `delete` method was called from a Server Component.
+            // This can be ignored if you have middleware refreshing
+            // user sessions.
+          }
+        },
+      },
     }
-    Functions: {
-        [_ in never]: never
-    }
-  };
-};
-
-const supabaseUrl = process.env.SUPABASE_URL
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and anonymous key are required.');
+  )
 }
-
-// Create a single supabase client for interacting with your database
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);

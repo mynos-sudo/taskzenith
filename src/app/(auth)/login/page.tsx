@@ -1,9 +1,5 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-
+import { login } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,43 +10,13 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Rocket } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Rocket } from "lucide-react";
 
-export default function LoginPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to login");
-      }
-
-      router.push("/dashboard");
-    } catch (error) {
-      toast({
-        title: "Login Failed",
-        description: error instanceof Error ? error.message : "An unknown error occurred.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+export default function LoginPage({
+  searchParams,
+}: {
+  searchParams: { message: string };
+}) {
 
   return (
     <Card className="mx-auto max-w-sm">
@@ -62,17 +28,15 @@ export default function LoginPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="grid gap-4">
+        <form action={login} className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
               placeholder="m@example.com"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={isLoading}
             />
           </div>
           <div className="grid gap-2">
@@ -87,18 +51,20 @@ export default function LoginPage() {
             </div>
             <Input
               id="password"
+              name="password"
               type="password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={isLoading}
             />
           </div>
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {searchParams.message && (
+             <div className="text-sm font-medium text-destructive">
+               {searchParams.message}
+             </div>
+           )}
+          <Button type="submit" className="w-full">
             Login
           </Button>
-          <Button variant="outline" className="w-full" disabled={isLoading}>
+          <Button variant="outline" className="w-full" formAction="" disabled>
             Login with Google
           </Button>
         </form>
