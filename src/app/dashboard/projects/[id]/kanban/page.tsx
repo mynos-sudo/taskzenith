@@ -17,13 +17,16 @@ import {
   DialogTitle,
   DialogDescription,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { CreateTaskForm } from "@/components/tasks/create-task-form";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TaskDetails } from "@/components/tasks/task-details";
 import { ManageMembersDialog } from "@/components/projects/manage-members-dialog";
 import { summarizeProject } from "@/ai/flows/summarize-project";
+import { generateTasks } from "@/ai/flows/generate-tasks-flow";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const outlookConfig = {
     Positive: { icon: TrendingUp, color: 'text-green-500', bgColor: 'bg-green-500/10' },
@@ -46,6 +49,10 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
   const [summary, setSummary] = useState<ProjectSummary | null>(null);
   const [isSummaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
+
+  const [isGenerateTasksOpen, setGenerateTasksOpen] = useState(false);
+  const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+  const [generationGoal, setGenerationGoal] = useState("");
 
   const fetchProject = useCallback(async () => {
     setIsLoading(true);
@@ -100,6 +107,58 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
       setSummaryLoading(false);
     }
   }, [projectId, toast]);
+
+  const handleGenerateTasks = async () => {
+    if (!generationGoal) {
+        toast({ title: "Goal is empty", description: "Please provide a goal for the AI to generate tasks.", variant: "destructive" });
+        return;
+    }
+    setIsGeneratingTasks(true);
+    try {
+        const result = await generateTasks({ goal: generationGoal });
+        
+        const creationPromises = result.tasks.map(task => 
+            fetch(`/api/projects/${projectId}/tasks`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: task.title,
+                    description: task.description,
+                    priority: task.priority,
+                    status: 'backlog',
+                }),
+            })
+        );
+        
+        const responses = await Promise.all(creationPromises);
+        
+        const failedTasks = responses.filter(res => !res.ok);
+        if (failedTasks.length > 0) {
+            const failedCount = failedTasks.length;
+            const totalCount = responses.length;
+            throw new Error(`${failedCount} of ${totalCount} tasks could not be created.`);
+        }
+
+        toast({
+            title: "Tasks Generated!",
+            description: `${result.tasks.length} new tasks have been added to your project's backlog.`,
+        });
+
+        setGenerateTasksOpen(false);
+        setGenerationGoal("");
+        handleBoardUpdate();
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : "An unknown error occurred";
+      toast({
+        title: "AI Task Generation Failed",
+        description: errorMsg,
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingTasks(false);
+    }
+  };
+
 
   useEffect(() => {
     if (projectId) {
@@ -173,6 +232,11 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
               <Wand2 className="h-4 w-4 mr-2" />
               AI Summary
             </Button>
+
+            <Button variant="outline" onClick={() => setGenerateTasksOpen(true)}>
+              <Wand2 className="h-4 w-4 mr-2" />
+              Generate Tasks
+            </Button>
            
             <Dialog open={isCreateTaskOpen} onOpenChange={setCreateTaskOpen}>
               <DialogTrigger asChild>
@@ -238,6 +302,37 @@ export default function KanbanPage({ params }: { params: Promise<{ id: string }>
             </div>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={isGenerateTasksOpen} onOpenChange={setGenerateTasksOpen}>
+            <DialogContent className="sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Generate Tasks with AI</DialogTitle>
+                  <DialogDescription>
+                    Describe a high-level goal, and the AI will break it down into actionable tasks for you. The generated tasks will be added to the 'Backlog'.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4 space-y-4">
+                  <Textarea
+                    placeholder="e.g., 'Launch a new feature for user authentication'"
+                    value={generationGoal}
+                    onChange={(e) => setGenerationGoal(e.target.value)}
+                    className="min-h-[100px]"
+                    disabled={isGeneratingTasks}
+                  />
+                </div>
+                <DialogFooter>
+                  <Button onClick={handleGenerateTasks} disabled={isGeneratingTasks || !generationGoal}>
+                    {isGeneratingTasks ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Wand2 className="mr-2 h-4 w-4" />
+                    )}
+                    Generate & Add Tasks
+                  </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
       </div>
     </DndProvider>
   );
