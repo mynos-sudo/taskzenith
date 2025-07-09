@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { tasks, users, comments } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 import type { Comment } from '@/lib/types';
+import { users } from '@/lib/data'; // kept for mock user
 
 export async function POST(
   request: Request,
@@ -15,26 +16,34 @@ export async function POST(
       return NextResponse.json({ message: 'Comment content is required' }, { status: 400 });
     }
     
-    const task = tasks.find(t => t.id === taskId);
-    if (!task) {
-      return NextResponse.json({ message: 'Task not found' }, { status: 404 });
-    }
-
     // In a real app, you'd get the user from the auth session
-    const author = users[0]; 
+    const author = users[0];
+    const commentId = `comment-${Date.now()}`;
 
-    const newComment: Comment = {
-      id: `comment-${Date.now()}`,
-      content,
-      createdAt: new Date().toISOString(),
-      author,
+    const { data: newCommentData, error } = await supabase
+      .from('comments')
+      .insert({
+        id: commentId,
+        content,
+        task_id: taskId,
+        author_id: author.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+    
+    // Shape the data for the client
+    const clientComment: Comment = {
+      id: newCommentData.id,
+      content: newCommentData.content,
+      createdAt: newCommentData.created_at,
+      author: author,
     };
 
-    // For this mock, we are persisting it to the in-memory array.
-    comments.push(newComment);
-    task.comments.push(newComment);
-
-    return NextResponse.json(newComment, { status: 201 });
+    return NextResponse.json(clientComment, { status: 201 });
   } catch (error) {
     console.error(`Failed to create comment for task ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while creating the comment' }, { status: 500 });

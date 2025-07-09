@@ -5,6 +5,7 @@ import { kanbanColumns } from "@/lib/data";
 import type { Task, TaskStatus, KanbanColumn as KanbanColumnType } from "@/lib/types";
 import { KanbanColumn } from "./kanban-column";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 export default function KanbanBoard({ 
   projectId, 
@@ -19,6 +20,7 @@ export default function KanbanBoard({
     kanbanColumns.map(col => ({ ...col, tasks: [] }))
   );
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
@@ -43,54 +45,65 @@ export default function KanbanBoard({
       });
     } catch (error) {
       console.error("Failed to fetch tasks", error);
-      // Optionally set an error state to display to the user
+      toast({
+          title: "Error",
+          description: "Could not fetch tasks for this project.",
+          variant: "destructive"
+      })
     } finally {
       setIsLoading(false);
     }
-  }, [projectId]);
+  }, [projectId, toast]);
 
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks, refreshTrigger]);
   
-  const moveTask = useCallback((taskId: string, targetColumnId: TaskStatus) => {
-    // In a real app, you'd make an API call here to persist the change.
-    // For now, we optimistically update the UI.
-    setColumns(prevColumns => {
-      const newColumns = prevColumns.map(c => ({...c, tasks: [...c.tasks]}));
-      let taskToMove: Task | undefined;
-      let sourceColumn: KanbanColumnType | undefined;
+  const moveTask = useCallback(async (taskId: string, targetColumnId: TaskStatus) => {
+    let originalColumns = columns;
+    // Optimistic UI update
+    let taskToMove: Task | undefined;
 
-      // Find and remove task from source column
-      for (const col of newColumns) {
+    const newColumns = columns.map(col => {
         const taskIndex = col.tasks.findIndex(t => t.id === taskId);
         if (taskIndex > -1) {
-          sourceColumn = col;
-          [taskToMove] = col.tasks.splice(taskIndex, 1);
-          break;
+            taskToMove = col.tasks[taskIndex];
+            col.tasks.splice(taskIndex, 1);
         }
-      }
-
-      if (!taskToMove || !sourceColumn) {
-        return prevColumns; // Should not happen
-      }
-
-      // Update task status
-      taskToMove.status = targetColumnId;
-
-      // Find target column and add task
-      const targetColumn = newColumns.find(col => col.id === targetColumnId);
-      if (targetColumn) {
-        targetColumn.tasks.push(taskToMove);
-      } else {
-        // If something goes wrong, return task to source column
-        sourceColumn.tasks.push(taskToMove);
-        return prevColumns;
-      }
-
-      return newColumns;
+        return col;
     });
-  }, []);
+
+    if (taskToMove) {
+        taskToMove.status = targetColumnId;
+        const targetColumn = newColumns.find(col => col.id === targetColumnId);
+        targetColumn?.tasks.push(taskToMove);
+        setColumns(newColumns);
+    } else {
+        return; // Should not happen
+    }
+
+    // API call to persist the change
+    try {
+        const response = await fetch(`/api/tasks/${taskId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: targetColumnId, title: taskToMove.title, priority: taskToMove.priority }), // Send required fields
+        });
+        if (!response.ok) {
+            throw new Error('Failed to update task status');
+        }
+    } catch (error) {
+        console.error("Failed to move task", error);
+        toast({
+            title: "Update Failed",
+            description: "Could not update task status. Reverting change.",
+            variant: "destructive"
+        });
+        // Revert UI on failure
+        setColumns(originalColumns);
+    }
+
+  }, [columns, toast]);
 
   if (isLoading) {
     return (
