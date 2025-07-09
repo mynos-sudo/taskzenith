@@ -33,7 +33,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import type { User, Task } from "@/lib/types";
+import type { Task } from "@/lib/types";
 import { AssigneeSelector } from "./assignee-selector";
 import { DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { Textarea } from "../ui/textarea";
@@ -93,7 +93,7 @@ export function CreateTaskForm({ projectId, onSuccess, task }: CreateTaskFormPro
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      const url = isEditMode ? `/api/tasks/${task.id}` : `/api/projects/${projectId}/tasks`;
+      const url = isEditMode && task ? `/api/tasks/${task.id}` : `/api/projects/${projectId}/tasks`;
       const method = isEditMode ? "PUT" : "POST";
       
       const response = await fetch(url, {
