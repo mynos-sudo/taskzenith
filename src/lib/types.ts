@@ -41,6 +41,11 @@ export type Task = {
   priority: Priority;
   assignees: User[];
   projectId: string;
+  project?: {
+    id: string;
+    name: string;
+    color: string;
+  };
   dueDate?: string;
   createdAt: string;
   updatedAt: string;

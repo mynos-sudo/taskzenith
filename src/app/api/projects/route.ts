@@ -1,15 +1,28 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import type { Project } from '@/lib/types';
-import { tasks as mockTasks } from '@/lib/data'; // Keep mock tasks for now
 
 // A helper function to fetch tasks for a project and calculate progress.
-// In a real app, this would also fetch from a 'tasks' table in Supabase.
-const getProgressForProject = (projectId: string) => {
-    const projectTasks = mockTasks.filter(task => task.projectId === projectId);
-    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-    const totalTasks = projectTasks.length;
-    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+const getProgressForProject = async (projectId: string) => {
+    const { count: totalTasks, error: totalError } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId);
+
+    if (totalError) throw totalError;
+
+    const { count: completedTasks, error: completedError } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .eq('status', 'done');
+    
+    if (completedError) throw completedError;
+
+    const total = totalTasks ?? 0;
+    const completed = completedTasks ?? 0;
+
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
 };
 
 export async function GET(request: Request) {
@@ -32,20 +45,21 @@ export async function GET(request: Request) {
       throw error;
     }
 
-    // For now, we'll continue calculating progress based on mock tasks
-    // and injecting mock members until those are also migrated to Supabase.
-    const projectsWithProgress = projectsData.map(project => {
-        const progress = getProgressForProject(project.id);
-        
-        let status: Project['status'] = project.status;
-        if (progress === 100) {
-            status = 'Completed';
-        } else if (project.status === 'Completed') {
-            status = 'On Track';
-        }
+    const projectsWithProgress = await Promise.all(
+        projectsData.map(async (project) => {
+            const progress = await getProgressForProject(project.id);
+            
+            let status: Project['status'] = project.status;
+            if (progress === 100) {
+                status = 'Completed';
+            } else if (project.status === 'Completed') {
+                status = 'On Track';
+            }
 
-        return { ...project, progress, status, members: [] }; // Return empty members for now
-    });
+            return { ...project, progress, status, members: [] }; // Return empty members for now
+        })
+    );
+
 
     return NextResponse.json(projectsWithProgress);
   } catch (error) {

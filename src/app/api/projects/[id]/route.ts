@@ -1,15 +1,28 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import { tasks as mockTasks } from '@/lib/data'; // Keep for progress calculation
 import type { Project } from '@/lib/types';
 
-// Helper to calculate progress based on mock tasks.
-// This will be replaced when tasks are migrated to Supabase.
-const getProgressForProject = (projectId: string) => {
-    const projectTasks = mockTasks.filter(task => task.projectId === projectId);
-    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-    const totalTasks = projectTasks.length;
-    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+// Helper to calculate progress based on tasks in Supabase.
+const getProgressForProject = async (projectId: string) => {
+    const { count: totalTasks, error: totalError } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId);
+
+    if (totalError) throw totalError;
+
+    const { count: completedTasks, error: completedError } = await supabase
+        .from('tasks')
+        .select('*', { count: 'exact', head: true })
+        .eq('project_id', projectId)
+        .eq('status', 'done');
+    
+    if (completedError) throw completedError;
+
+    const total = totalTasks ?? 0;
+    const completed = completedTasks ?? 0;
+
+    return total > 0 ? Math.round((completed / total) * 100) : 0;
 };
 
 
@@ -31,7 +44,7 @@ export async function GET(
       throw error;
     }
     
-    const progress = getProgressForProject(projectData.id);
+    const progress = await getProgressForProject(projectData.id);
     
     let status: Project['status'] = projectData.status;
     if (progress === 100 && status !== 'Completed') {
@@ -96,7 +109,7 @@ export async function PUT(
       throw error;
     }
     
-    const progress = getProgressForProject(updatedProject.id);
+    const progress = await getProgressForProject(updatedProject.id);
     const clientProject = {...updatedProject, progress, members: [] }
 
     return NextResponse.json(clientProject);

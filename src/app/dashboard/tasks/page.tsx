@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { MoreHorizontal } from "lucide-react";
 import type { Task, Project, Priority, TaskStatus } from "@/lib/types";
-import { projects, users } from "@/lib/data"; // for getting project name and color
+import { users } from "@/lib/data"; // for getting project name and color
 import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -143,10 +143,6 @@ export default function TasksPage() {
     }
   }
 
-  const getProjectById = (projectId: string): Project | undefined => {
-    return projects.find(p => p.id === projectId);
-  }
-
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -192,7 +188,6 @@ export default function TasksPage() {
                 ))
               ) : filteredTasks.length > 0 ? (
                 filteredTasks.map((task) => {
-                  const project = getProjectById(task.projectId);
                   return (
                     <TableRow key={task.id}>
                       <TableCell className="font-medium">
@@ -201,11 +196,11 @@ export default function TasksPage() {
                         </button>
                       </TableCell>
                        <TableCell className="hidden md:table-cell">
-                         {project && (
+                         {task.project && (
                            <div className="flex items-center gap-2">
-                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: project.color }}></span>
-                             <Link href={`/dashboard/projects/${project.id}/kanban`} className="hover:underline text-muted-foreground">
-                              {project.name}
+                             <span className="h-2 w-2 rounded-full" style={{ backgroundColor: task.project.color }}></span>
+                             <Link href={`/dashboard/projects/${task.projectId}/kanban`} className="hover:underline text-muted-foreground">
+                              {task.project.name}
                              </Link>
                            </div>
                          )}

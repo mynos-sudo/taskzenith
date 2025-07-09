@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { projects, users } from "@/lib/data";
+import { users } from "@/lib/data";
 import type { Task } from "@/lib/types";
 import { Skeleton } from "../ui/skeleton";
 
@@ -65,13 +65,12 @@ export default function TasksOverview() {
   return (
     <div className="space-y-4">
         {tasks.map((task) => {
-            const project = projects.find(p => p.id === task.projectId);
             return (
               <Link href={`/dashboard/projects/${task.projectId}/kanban`} key={task.id} passHref>
                 <div className="flex items-center p-2 hover:bg-muted/50 rounded-lg cursor-pointer">
                     <div className="ml-4 space-y-1">
                         <p className="text-sm font-medium leading-none">{task.title}</p>
-                        <p className="text-sm text-muted-foreground">{project?.name}</p>
+                        <p className="text-sm text-muted-foreground">{task.project?.name}</p>
                     </div>
                     <div className="ml-auto font-medium capitalize text-sm text-muted-foreground">{task.priority}</div>
                 </div>
