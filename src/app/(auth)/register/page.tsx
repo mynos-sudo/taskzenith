@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { register } from "./actions";
+import { register } from "../actions";
 import { Button } from "@/components/ui/button";
 import {
   Card,
