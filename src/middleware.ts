@@ -2,6 +2,20 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
+  // A more robust check for the environment variables.
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.length === 0 || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length === 0) {
+    const errorText = 'Supabase environment variables are not set correctly. Please ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are present in your .env.local file and the server has been restarted.';
+    console.error(errorText);
+    // Return a response that is visually obvious in the browser.
+    return new NextResponse(
+        `<h1>Configuration Error</h1><p>${errorText}</p>`,
+        { 
+            status: 500,
+            headers: { 'Content-Type': 'text/html' }
+        }
+    );
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
