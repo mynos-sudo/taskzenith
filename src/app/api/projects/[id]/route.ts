@@ -1,36 +1,56 @@
 import { NextResponse } from 'next/server';
-import { projects, tasks, users } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
+import { tasks as mockTasks } from '@/lib/data'; // Keep for progress calculation
 import type { Project } from '@/lib/types';
+
+// Helper to calculate progress based on mock tasks.
+// This will be replaced when tasks are migrated to Supabase.
+const getProgressForProject = (projectId: string) => {
+    const projectTasks = mockTasks.filter(task => task.projectId === projectId);
+    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
+    const totalTasks = projectTasks.length;
+    return totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+};
+
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const project = projects.find(p => p.id === params.id);
+    const { data: projectData, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', params.id)
+      .single();
 
-    if (!project) {
-      return NextResponse.json({ message: 'Project not found' }, { status: 404 });
+    if (error || !projectData) {
+      if (error?.code === 'PGRST116') { // Error when no rows are found
+        return NextResponse.json({ message: 'Project not found' }, { status: 404 });
+      }
+      throw error;
     }
     
-    const projectTasks = tasks.filter(task => task.projectId === project.id);
-    const completedTasks = projectTasks.filter(task => task.status === 'done').length;
-    const totalTasks = projectTasks.length;
-    const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const progress = getProgressForProject(projectData.id);
     
-    let status: Project['status'] = 'On Track';
-    if (progress === 100) {
+    let status: Project['status'] = projectData.status;
+    if (progress === 100 && status !== 'Completed') {
         status = 'Completed';
-    } else if (project.status === 'Off Track' || project.status === 'At Risk') {
-        // Keep existing risk status unless completed
-        status = project.status;
+    } else if (progress < 100 && status === 'Completed') {
+        status = 'On Track'; // Revert if tasks are added/reopened
     }
 
-    const projectWithProgress = { ...project, progress, status };
+    // Construct the client-facing project object
+    const projectWithDetails: Project = { 
+        ...projectData, 
+        description: projectData.description ?? undefined,
+        color: projectData.color ?? undefined,
+        progress,
+        status,
+        members: [] // Members are not yet in the database
+    };
 
-
-    // In a real app, you would also check if the authenticated user has access to this project.
-    return NextResponse.json(projectWithProgress);
+    return NextResponse.json(projectWithDetails);
   } catch (error) {
     console.error(`Failed to fetch project ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while fetching the project' }, { status: 500 });
@@ -44,34 +64,42 @@ export async function PUT(
   try {
     const projectId = params.id;
     const body = await request.json();
-    const { name, description, color, members } = body;
+    const { name, description, color, status } = body;
 
-    const projectIndex = projects.findIndex(p => p.id === projectId);
-    if (projectIndex === -1) {
-      return NextResponse.json({ message: 'Project not found' }, { status: 404 });
-    }
-
-    const projectToUpdate = projects[projectIndex];
+    // Note: 'members' are not handled yet as they are not in the DB schema
+    const updateData: { name?: string; description?: string; color?: string; status?: Project['status'] } = {};
 
     if (name !== undefined) {
       if (!name) {
         return NextResponse.json({ message: 'Project name is required' }, { status: 400 });
       }
-      projectToUpdate.name = name;
+      updateData.name = name;
     }
     if (description !== undefined) {
-      projectToUpdate.description = description || '';
+      updateData.description = description || '';
     }
     if (color !== undefined) {
-      projectToUpdate.color = color || '#6366f1';
+      updateData.color = color || '#6366f1';
     }
-    if (members !== undefined) {
-      projectToUpdate.members = members;
+    if (status !== undefined) {
+      updateData.status = status;
     }
 
-    projects[projectIndex] = projectToUpdate;
+    const { data: updatedProject, error } = await supabase
+      .from('projects')
+      .update(updateData)
+      .eq('id', projectId)
+      .select()
+      .single();
 
-    return NextResponse.json(projectToUpdate);
+    if (error) {
+      throw error;
+    }
+    
+    const progress = getProgressForProject(updatedProject.id);
+    const clientProject = {...updatedProject, progress, members: [] }
+
+    return NextResponse.json(clientProject);
   } catch (error) {
     console.error(`Failed to update project ${params.id}:`, error);
     return NextResponse.json({ message: 'An error occurred while updating the project' }, { status: 500 });
@@ -84,20 +112,16 @@ export async function DELETE(
 ) {
   try {
     const projectId = params.id;
-    const projectIndex = projects.findIndex(p => p.id === projectId);
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
 
-    if (projectIndex === -1) {
-      return NextResponse.json({ message: 'Project not found' }, { status: 404 });
+    if (error) {
+      throw error;
     }
 
-    projects.splice(projectIndex, 1);
-    
-    // Also delete associated tasks
-    const remainingTasks = tasks.filter(task => task.projectId !== projectId);
-    tasks.length = 0;
-    Array.prototype.push.apply(tasks, remainingTasks);
-
-
+    // Once tasks are in Supabase, we would handle cascading deletes or orphaned tasks here.
     return NextResponse.json({ message: 'Project deleted successfully' }, { status: 200 });
   } catch (error) {
     console.error(`Failed to delete project ${params.id}:`, error);
